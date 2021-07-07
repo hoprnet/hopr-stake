@@ -17,14 +17,9 @@ interface IHoprBoost is IERC721 {
      * @dev Returns the boost associated with ``tokenId``.
      */
     function boostFactorOf(uint256 tokenId) external view returns (uint256);
-
+    
     /**
-     * @dev Mints precrafted boosts for ``account``.
+     * @dev Returns the boost associated with ``tokenId``.
      */
-    function onInitialLock(address account) external;
-
-    /**
-     * @dev Burns the token with ``tokenId``
-     */
-    function burn(uint256 tokenId) external;
+    function typeOf(uint256 tokenId) external view returns (uint256);
 }

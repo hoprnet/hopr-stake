@@ -31,16 +31,22 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         uint256 claimedRewards; // Rewards claimed by the account.
     }
 
-    uint256 public constant LOCK_DEADLINE = 1627387200; // Block timestamp at which incentive program starts. It is thus the deadline for locking tokens. Default value is 1627387200 (July 27th 2021 14:00 CET).
-    uint256 public constant UNLOCK_START = 1642424400; // Block timestamp at which incentive program ends. From this timestamp on, tokens can be unlocked. Default value is 1642424400 (Jan 17th 2022 14:00 CET).
+    uint256 public constant BASIC_START = 1627387200; // Block timestamp at which incentive program starts for accounts that stake real LOCK_TOKEN. Default value is 1627387200 (July 27th 2021 14:00 CET).
+    uint256 public constant SEED_START = 1630065600; // Block timestamp at which incentive program starts for seed investors that promise to stake their unreleased tokens. Default value is 1630065600 (August 27th 2021 14:00 CET).
+    uint256 public constant PROGRAM_END = 1642424400; // Block timestamp at which incentive program ends. From this timestamp on, tokens can be unlocked. Default value is 1642424400 (Jan 17th 2022 14:00 CET).
     uint256 public constant FACTOR_DENOMINATOR = 1e12; // Denominator of the “Basic reward factor”. Default value is 1e12.
-    uint256 public constant FACTOR_NUMERATOR = 5787; // Numerator of the “Basic reward factor”, for all accounts (except for seed investors) that participate in the program. Default value is 5787, which corresponds to 5.787/1e9 per second. Its associated denominator is FACTOR_DENOMINATOR. 
+    uint256 public constant BASIC_FACTOR_NUMERATOR = 5787; // Numerator of the “Basic reward factor”, for all accounts (except for seed investors) that participate in the program. Default value is 5787, which corresponds to 5.787/1e9 per second. Its associated denominator is FACTOR_DENOMINATOR. 
+    uint256 public constant SEED_FACTOR_NUMERATOR = 7032; // Numerator of the "Seed reward factor”, for all accounts (except for seed investors) that participate in the program. Default value is 7032, which corresponds to 7.032/1e9 per second. Its associated denominator is FACTOR_DENOMINATOR. 
+    uint256 public constant BOOST_CAP = 1e24; // Cap on actual locked tokens for receiving additional boosts.
     address public constant LOCK_TOKEN = 0xD057604A14982FE8D88c5fC25Aac3267eA142a08; // Token that HOPR holders need to lock to the contract: xHOPR address.
     address public constant REWARD_TOKEN = 0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1; // Token that HOPR holders can claim as rewards: wxHOPR address
 
     IHoprBoost public nftContract; // Address of the NFT smart contract.
-    mapping(address=>mapping(uint256=>uint256)) public redeemedFactor; // Redeemed additional boost factors per account, structured as “account -> index -> NFT tokenId”.
-    mapping(address=>uint256) public redeemedFactorIndex; // The last index of redeemed boost factor of an account. It defines the length of the “redeemed factor” mapping.
+    mapping(address=>mapping(uint256=>uint256)) public redeemedNft; // Redeemed NFT per account, structured as “account -> index -> NFT tokenId”.
+    mapping(address=>uint256) public redeemedNftIndex; // The last index of redeemed NFT of an account. It defines the length of the “redeemedBoostToken mapping.
+    mapping(address=>mapping(uint256=>uint256)) public redeemedFactor; // Redeemed boost factor per account, structured as “account -> index -> NFT tokenId”.
+    mapping(address=>uint256) public redeemedFactorIndex; // The last index of redeemed boost factor factor of an account. It defines the length of the “redeemedFactor” mapping.
+
     mapping(address=>Account) public accounts; // It stores the locked token amount, earned and claimed rewards per account.
     uint256 public totalLocked;  // Total amount of tokens being locked in the incentive program. Virtual token locks are not taken into account.
     uint256 public availableReward; // Total amount of reward tokens currently available in the lock.
@@ -50,9 +56,10 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
 
     event Sync(address indexed account, uint256 indexed increment);
-    event Stake(address indexed account, uint256 indexed actualAmount, uint256 indexed virtualAmount);
+    event Staked(address indexed account, uint256 indexed actualAmount, uint256 indexed virtualAmount);
+    event Released(address indexed account, uint256 indexed actualAmount, uint256 indexed virtualAmount);
     event RewardFueled(uint256 indexed amount);
-    event Redeemed(address indexed account, uint256 indexed boostTokenId);
+    event Redeemed(address indexed account, uint256 indexed boostTokenId, bool indexed factorReplaced);
     event Claimed(address indexed account, uint256 indexed rewardAmount);
 
     /**
@@ -68,11 +75,9 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
     }
 
     /**
-     * @dev ERC677 hook. Token holders can send their tokens with `transferAndCall` to the stake contract. 
-     * Before LOCK_DEADLINE, it accepts tokens, update “Account” in accounts mapping, 
-     * Update totalLocked and mint precrafted boosts (calling onIntialLock() of “HoprBoost NFT contract”); 
-     * After UNLOCK_START, it refuses tokens; In between, it’s only possible to accept tokens from existing accounts.
-     * and update totalLocked, sync Account state. 
+     * @dev ERC677 hook. Token holders can send their tokens with `transferAndCall` to the stake contract.  
+     * After PROGRAM_END, it refuses tokens; Before PROGRAM_END, it accepts tokens xHOPR token, sync 
+     * Account state, and update totalLocked. 
      * @param _from address Address of tokens sender
      * @param _value uint256 token amount being transferred
      * @param _data bytes Data being sent along with token transfer
@@ -84,22 +89,13 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         bytes memory _data
     ) external returns (bool) {
         require(msg.sender == LOCK_TOKEN, "HoprStake: Only accept LOCK_TOKEN in staking");
-        require(block.timestamp <= UNLOCK_START, "HoprStake: Program ended, cannot stake anymore.");
-        Account memory account = accounts[_from];
+        require(block.timestamp <= PROGRAM_END, "HoprStake: Program ended, cannot stake anymore.");
 
-        if (block.timestamp > LOCK_DEADLINE) {
-            require(account.actualLockedTokenAmount + account.virtualLockedTokenAmount > 0, "HoprStake: Program started, too late to put initial stake.");
-            _sync(_from);
-        }
-
+        _sync(_from);
         accounts[_from].actualLockedTokenAmount += _value;
-        accounts[_from].lastSyncTimestamp = block.timestamp;
         totalLocked += _value;
-        emit Stake(_from, accounts[_from].actualLockedTokenAmount, accounts[_from].virtualLockedTokenAmount);
+        emit Staked(_from, _value, 0);
 
-        if (block.timestamp <= LOCK_DEADLINE) {
-            nftContract.onInitialLock(_from);
-        }
         return true;
     }
 
@@ -124,7 +120,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         bytes calldata operatorData
     ) external override nonReentrant {
         require(msg.sender == REWARD_TOKEN, "HoprStake: Sender must be wxHOPR token");
-        require(to == address(this), "HoprStake: Must be sending tokens to HOPR Stake contract");
+        require(to == address(this), "HoprStake: Must be sending tokens to HoprStake contract");
         require(from == owner(), "HoprStake: Only accept owner to provide rewards");
         availableReward += amount;
         emit RewardFueled(amount);
@@ -132,7 +128,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
 
     /**
      * @dev Whenever a boost `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
-     * when redeeming, this function is called. 
+     * when redeeming, this function is called. Boost factor associated with the 
      * It must return its Solidity selector to confirm the token transfer upon success.
      * @param operator address operator requesting the transfer
      * @param from address token holder address
@@ -148,16 +144,35 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         bytes calldata data
     ) external override returns (bytes4) {
         require(_msgSender() == address(nftContract), "HoprStake: Cannot SafeTransferFrom tokens other than HoprBoost.");
-        require(block.timestamp <= UNLOCK_START, "HoprStake: Program ended, cannot redeem boosts.");
-        // redeem NFT
-        Account memory account = accounts[from];
-        require(account.actualLockedTokenAmount + account.virtualLockedTokenAmount > 0, "HoprStake: Cannot redeem for account with nothing at stake.");
+        require(block.timestamp <= PROGRAM_END, "HoprStake: Program ended, cannot redeem boosts.");
+        // Account memory account = accounts[from];
         _sync(from);
-        redeemedFactor[from][redeemedFactorIndex[from]] = tokenId;
-        redeemedFactorIndex[from] += 1;
-        // burns token after redeeming
-        nftContract.burn(tokenId);
-        emit Redeemed(from, tokenId);
+
+        // redeem NFT
+        redeemedNft[from][redeemedNftIndex[from]] = tokenId;
+        redeemedNftIndex[from] += 1;
+
+        // update boost factor
+        uint256 typeId = nftContract.typeOf(tokenId);
+        uint256 boost = nftContract.boostFactorOf(tokenId);
+        uint256 boostIndex = redeemedFactorIndex[from];
+        uint256 index = 0;
+        for (index; index < boostIndex; index++) {
+            // loop through redeemed factors, replace the factor of the same type, if the current factor is larger.
+            uint256 redeemedId = redeemedFactor[from][index];
+            if (nftContract.typeOf(redeemedId) == typeId && nftContract.boostFactorOf(redeemedId) < boost) {
+                redeemedFactor[from][index] = tokenId;
+                emit Redeemed(from, tokenId, false);
+                break;
+            }
+        }
+        if (index == boostIndex) {
+            // new type being redeemed.
+            redeemedFactor[from][boostIndex] = tokenId;
+            redeemedFactorIndex[from] += 1;
+            emit Redeemed(from, tokenId, true);
+        }
+
         return IERC721Receiver(address(this)).onERC721Received.selector;
     }
 
@@ -169,18 +184,14 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
     * @param caps uint256[] Array of their virtually locked tokens.
     */
     function lock(address[] calldata investors, uint256[] calldata caps) onlyOwner external {
-        require(block.timestamp <= LOCK_DEADLINE, "HoprStake: Program ended, cannot stake anymore.");
+        require(block.timestamp <= BASIC_START, "HoprStake: Program ended, cannot stake anymore.");
         require(investors.length <= caps.length, "HoprStake: Length does not match");
 
         for (uint256 index = 0; index < investors.length; index++) { 
             address investor = investors[index];
-            Account memory account = accounts[investor];
-
             accounts[investor].virtualLockedTokenAmount += caps[index];
             accounts[investor].lastSyncTimestamp = block.timestamp;
-
-            nftContract.onInitialLock(investor);
-            emit Stake(investor, account.actualLockedTokenAmount, accounts[investor].virtualLockedTokenAmount);
+            emit Staked(investor, 0, caps[index]);
         }
     }
 
@@ -208,14 +219,21 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
      * @param account address Account that staked tokens.
      */
     function unlock(address account) external {
-        require(block.timestamp > UNLOCK_START, "HoprStake: Program is ongoing, cannot unlock stake.");
-        uint256 stake = accounts[account].actualLockedTokenAmount;
+        require(block.timestamp > PROGRAM_END, "HoprStake: Program is ongoing, cannot unlock stake.");
+        uint256 actualStake = accounts[account].actualLockedTokenAmount;
+        uint256 virtualStake = accounts[account].virtualLockedTokenAmount;
         _sync(account); 
         accounts[account].actualLockedTokenAmount = 0;
-        totalLocked -= stake;
+        accounts[account].virtualLockedTokenAmount = 0;
+        totalLocked -= actualStake;
         _claim(account);
-        // unlock tokens
-        IERC20(LOCK_TOKEN).safeTransfer(account, stake);
+        // unlock actual staked tokens
+        IERC20(LOCK_TOKEN).safeTransfer(account, actualStake);
+        // unlock redeemed NFTs
+        for (uint256 index = 0; index < redeemedNftIndex[account]; index++) {
+            nftContract.transferFrom(address(this), account, redeemedNft[account][index]);
+        }
+        emit Released(account, actualStake, virtualStake);
     }
 
     /**
@@ -250,23 +268,35 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
 
     /**
      * @dev Calculates the increment of cumulated rewards during the “lastSyncTimestamp” and block.timestamp. 
+     * current block timestamp and lastSyncTimestamp are confined in [BASIC_START, PROGRAMEND] for basic and boosted lockup,
+     * and [SEED_START, PROGRAMEND] for seed investors.
      * @param _account address Address of the account whose rewards will be calculated.
      */
     function _getCumulatedRewardsIncrement(address _account) private view returns (uint256) {
-        if (block.timestamp < LOCK_DEADLINE) {
+        Account memory account = accounts[_account];
+        if (block.timestamp <= BASIC_START || account.lastSyncTimestamp >= PROGRAM_END) {
+            // skip calculation and return directly 0;
             return 0;
         }
-
-        Account memory account = accounts[_account];
-        uint256 nominalTokenAmount = account.actualLockedTokenAmount + account.virtualLockedTokenAmount;
-        uint256 incrementNumerator = nominalTokenAmount * FACTOR_NUMERATOR;
-
+        // Per second gain, for basic lock-up.
+        uint256 gainPerSec = account.actualLockedTokenAmount * BASIC_FACTOR_NUMERATOR;
+        
+        // Per second gain, for additional boost, applicable to amount under BOOST_CAP
         for (uint256 index = 0; index < redeemedFactorIndex[_account]; index++) {
             uint256 tokenId = redeemedFactor[_account][index];
             uint256 boost = nftContract.boostFactorOf(tokenId);
-            incrementNumerator += (nominalTokenAmount) * boost;
+            gainPerSec += (account.actualLockedTokenAmount.min(BOOST_CAP)) * boost;
         }
-        return incrementNumerator * (block.timestamp.min(UNLOCK_START) - (account.lastSyncTimestamp.max(LOCK_DEADLINE)).min(UNLOCK_START)) / FACTOR_DENOMINATOR;
+
+        return (
+                gainPerSec * (
+                block.timestamp.max(BASIC_START).min(PROGRAM_END) - 
+                account.lastSyncTimestamp.max(BASIC_START).min(PROGRAM_END)
+                ) + account.virtualLockedTokenAmount * SEED_FACTOR_NUMERATOR * (    // Per second gain, for seed investor lock-up
+                block.timestamp.max(SEED_START).min(PROGRAM_END) - 
+                account.lastSyncTimestamp.max(SEED_START).min(PROGRAM_END)
+                )
+            ) / FACTOR_DENOMINATOR;
     }
 
     /**
@@ -293,7 +323,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         require(availableReward >= amount, "HoprStake: Insufficient reward pool.");
         availableReward -= amount;
         // send rewards to the account.
-        emit Claimed(_account, amount);
         IERC20(REWARD_TOKEN).safeTransfer(_account, amount);
+        emit Claimed(_account, amount);
     }
 }
