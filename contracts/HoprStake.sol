@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-// import "@openzeppelin/contracts/utils/Arrays.sol";
-// import "@openzeppelin/contracts/token/ERC777/IERC777.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
@@ -17,7 +15,7 @@ import "./IHoprBoost.sol";
 /**
  * 
  */
-contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuard { // is IERC777Recipient, IERC721Receiver, 
+contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -118,7 +116,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         bytes calldata userData,
         // solhint-disable-next-line no-unused-vars
         bytes calldata operatorData
-    ) external override nonReentrant {
+    ) external override {
         require(msg.sender == REWARD_TOKEN, "HoprStake: Sender must be wxHOPR token");
         require(to == address(this), "HoprStake: Must be sending tokens to HoprStake contract");
         require(from == owner(), "HoprStake: Only accept owner to provide rewards");
@@ -160,7 +158,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         for (index; index < boostIndex; index++) {
             // loop through redeemed factors, replace the factor of the same type, if the current factor is larger.
             uint256 redeemedId = redeemedFactor[from][index];
-            if (nftContract.typeOf(redeemedId) == typeId && nftContract.boostFactorOf(redeemedId) < boost) {
+            if (nftContract.typeOf(redeemedId) == typeId && nftContract.boostFactorOf(redeemedId) <= boost) {
                 redeemedFactor[from][index] = tokenId;
                 emit Redeemed(from, tokenId, false);
                 break;
@@ -240,7 +238,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
      * @dev Reclaim any ERC20 token being accidentally sent to the contract.
      * @param tokenAddress address ERC20 token address.
      */
-    function reclaimErc20Tokens(address tokenAddress) external onlyOwner {
+    function reclaimErc20Tokens(address tokenAddress) external onlyOwner nonReentrant {
         uint256 difference;
         if (tokenAddress == LOCK_TOKEN) {
             difference = IERC20(LOCK_TOKEN).balanceOf(address(this)) - totalLocked;
@@ -254,7 +252,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
      * @dev Reclaim any ERC721 token being accidentally sent to the contract.
      * @param tokenAddress address ERC721 token address.
      */
-    function reclaimErc721Tokens(address tokenAddress, uint256 tokenId) external onlyOwner {
+    function reclaimErc721Tokens(address tokenAddress, uint256 tokenId) external onlyOwner nonReentrant {
         IHoprBoost(tokenAddress).transferFrom(address(this), owner(), tokenId);
     }
 

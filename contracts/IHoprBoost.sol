@@ -8,18 +8,13 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
  * @dev Required interface of an ERC721 compliant contract.
  */
 interface IHoprBoost is IERC721 {
-    // struct Boost {
-    //     uint256 lockedTokenCap;
-    //     uint256 boostNumerator;
-    // }
-
     /**
      * @dev Returns the boost associated with ``tokenId``.
      */
     function boostFactorOf(uint256 tokenId) external view returns (uint256);
     
     /**
-     * @dev Returns the boost associated with ``tokenId``.
+     * @dev Returns the boost type index associated with ``tokenId``.
      */
     function typeOf(uint256 tokenId) external view returns (uint256);
 }
