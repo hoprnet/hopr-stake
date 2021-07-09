@@ -9,7 +9,13 @@ const deployFromBytecode = async (deployer: Signer, abi: any, bytecode: string, 
 
 const deployContract = async (deployer: Signer, contractName: string, arg?: any): Promise<Contract> => {
     const contract = await hre.ethers.getContractFactory(contractName);
-    const artifact = await contract.connect(deployer).deploy(arg);
+    const artifact = !arg? await contract.connect(deployer).deploy() : await contract.connect(deployer).deploy(arg);
+    return artifact.deployed();
+}
+
+const deployContract2 = async (deployer: Signer, contractName: string, arg1:any, arg?: any): Promise<Contract> => {
+    const contract = await hre.ethers.getContractFactory(contractName);
+    const artifact = await contract.connect(deployer).deploy(arg1, arg);
     return artifact.deployed();
 }
 
@@ -24,4 +30,4 @@ const connectContract = async (contractName: string, contractAddress: string): P
     return contract.attach(contractAddress);
 }
 
-export {deployFromBytecode, deployContract, deployContract3, connectContract};
+export {deployFromBytecode, deployContract, deployContract2, deployContract3, connectContract};

@@ -25,6 +25,7 @@ const hardhatConfig: HardhatUserConfig = {
   defaultNetwork: 'localhost',
   networks: {
     hardhat: {
+      allowUnlimitedContractSize: true
     },
   },
   solidity: {
