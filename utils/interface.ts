@@ -55,7 +55,7 @@ const INTERFACES = {
         'getRoleMemberCount(bytes32)',
     ],
     IHoprBoost: [
-        'boostFactorOf(uint256)',
+        'boostOf(uint256)',
         'typeOf(uint256)',
     ]
 };

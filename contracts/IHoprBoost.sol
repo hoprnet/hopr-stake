@@ -9,12 +9,14 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
  */
 interface IHoprBoost is IERC721 {
     /**
-     * @dev Returns the boost associated with ``tokenId``.
+     * @dev Returns the boost factor and the redeem deadline associated with ``tokenId``.
+     * @param tokenId uint256 token Id of the boost.
      */
-    function boostFactorOf(uint256 tokenId) external view returns (uint256);
+    function boostOf(uint256 tokenId) external view returns (uint256, uint256);
     
     /**
      * @dev Returns the boost type index associated with ``tokenId``.
+     * @param tokenId uint256 token Id of the boost.
      */
     function typeOf(uint256 tokenId) external view returns (uint256);
 }

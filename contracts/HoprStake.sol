@@ -152,13 +152,17 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
 
         // update boost factor
         uint256 typeId = nftContract.typeOf(tokenId);
-        uint256 boost = nftContract.boostFactorOf(tokenId);
+        (uint256 factor, uint256 deadline) = nftContract.boostOf(tokenId);
+        require(deadline <= block.timestamp, "HoprStake: Cannot redeem an expired boost.");
+
         uint256 boostIndex = redeemedFactorIndex[from];
         uint256 index = 0;
         for (index; index < boostIndex; index++) {
             // loop through redeemed factors, replace the factor of the same type, if the current factor is larger.
             uint256 redeemedId = redeemedFactor[from][index];
-            if (nftContract.typeOf(redeemedId) == typeId && nftContract.boostFactorOf(redeemedId) <= boost) {
+            (uint256 newFactor, ) = nftContract.boostOf(tokenId);
+
+            if (nftContract.typeOf(redeemedId) == typeId && newFactor <= factor) {
                 redeemedFactor[from][index] = tokenId;
                 emit Redeemed(from, tokenId, false);
                 break;
@@ -282,7 +286,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         // Per second gain, for additional boost, applicable to amount under BOOST_CAP
         for (uint256 index = 0; index < redeemedFactorIndex[_account]; index++) {
             uint256 tokenId = redeemedFactor[_account][index];
-            uint256 boost = nftContract.boostFactorOf(tokenId);
+            (uint256 boost, ) = nftContract.boostOf(tokenId);
             gainPerSec += (account.actualLockedTokenAmount.min(BOOST_CAP)) * boost;
         }
 

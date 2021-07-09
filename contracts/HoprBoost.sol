@@ -24,6 +24,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
     string private _baseTokenURI;
     EnumerableStringSet.StringSet private _boostType;
     mapping(uint256=>uint256) private _boostNumerator; // tokenId => boost factor numerator
+    mapping(uint256=>uint256) private _redeemDeadline; // tokenId => deadline for redeeming a boost
     mapping(uint256=>uint256) private _boostTypeIndexOfId; // tokenId => boost type index
 
     /**
@@ -38,14 +39,16 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
     }
 
     /**
-     * @dev Returns the boost associated with ``tokenId``.
+     * @dev Returns the boost factor and the redeem deadline associated with ``tokenId``.
+     * @param tokenId uint256 token Id of the boost.
      */
-    function boostFactorOf(uint256 tokenId) external view override returns (uint256) {
-        return _boostNumerator[tokenId];
+    function boostOf(uint256 tokenId) external view override returns (uint256, uint256) {
+        return (_boostNumerator[tokenId], _redeemDeadline[tokenId]);
     }
     
     /**
      * @dev Returns the boost type index associated with ``tokenId``.
+     * @param tokenId uint256 token Id of the boost.
      */
     function typeOf(uint256 tokenId) external view override returns (uint256) {
         return _boostTypeIndexOfId[tokenId];
@@ -53,6 +56,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
 
     /**
      * @dev Admin can update the new base URI at any time.
+     * @param baseTokenURI string Basic URI of the token.
      */
     function updateBaseURI(string memory baseTokenURI) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _baseTokenURI = baseTokenURI;
@@ -64,14 +68,19 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * Provide boost factor, boost type and boost rank. If needed, register a new class of boost, 
      * with its "type", "rank" and "boost factor (numerator)"
      * The token URI is generated based on the base URI, boostType and boostRank.
+     * @param to address Address of token holder that will receive the NFT token of the given "type"
+     * @param boostType string Type of the boost
+     * @param boostRank string Rank of the boost
+     * @param boostNumerator uint256 Numerator of the boost factor. Its denominator is 1e12.
+     * @param redeemDeadline uint256 Deadline for redeem a boost.
      */
-    function mint(address to, string memory boostType, string memory boostRank, uint256 boostNumerator) external onlyRole(MINTER_ROLE) {
+    function mint(address to, string memory boostType, string memory boostRank, uint256 boostNumerator, uint256 redeemDeadline) external onlyRole(MINTER_ROLE) {
         // register boost type in the smart contract
         _boostType.add(boostType);
         uint256 boostTypeIndex = _boostType.indexOf(boostType);
         string memory _tokenURI = string(abi.encodePacked(boostType, "/", boostRank));
 
-        _mintBoost(to, boostNumerator, boostTypeIndex, _tokenURI);
+        _mintBoost(to, boostNumerator, redeemDeadline, boostTypeIndex, _tokenURI);
     }
 
     /**
@@ -80,15 +89,20 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * Provide boost factor, boost type and boost rank. If needed, register a new class of boost, 
      * with its "type", "rank" and "boost factor (numerator)"
      * The token URI is generated based on the base URI, boostType and boostRank.
+     * @param to address[] Addresses of token holder that will receive the NFT token of the given "type"
+     * @param boostType string Type of the boost
+     * @param boostRank string Rank of the boost
+     * @param boostNumerator uint256 Numerator of the boost factor. Its denominator is 1e12.
+     * @param redeemDeadline uint256 Deadline for redeem a boost.
      */
-    function batchMint(address[] calldata to, string calldata boostType, string calldata boostRank, uint256 boostNumerator) external onlyRole(MINTER_ROLE) {
+    function batchMint(address[] calldata to, string calldata boostType, string calldata boostRank, uint256 boostNumerator, uint256 redeemDeadline) external onlyRole(MINTER_ROLE) {
         // register boost type in the smart contract
         _boostType.add(boostType);
         uint256 boostTypeIndex = _boostType.indexOf(boostType);
         string memory _tokenURI = string(abi.encodePacked(boostType, "/", boostRank));
 
         for (uint256 index = 0; index < to.length; index++) {
-            _mintBoost(to[index], boostNumerator, boostTypeIndex, _tokenURI);
+            _mintBoost(to[index], boostNumerator, redeemDeadline, boostTypeIndex, _tokenURI);
         }
     }
 
@@ -128,10 +142,16 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
         return super.tokenURI(tokenId);
     }
 
+    /** 
+     * @dev Inherit _baseURI from {ERC721} and {ERC721URIStorage}
+     */
     function _baseURI() internal view override returns (string memory) {
         return _baseTokenURI;
     }
 
+    /** 
+     * @dev Inherit _baseURI from {ERC721} and {ERC721Enumerable}
+     */
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -141,7 +161,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
     }
 
     /**
-     * @dev Cannot burn
+     * @dev Cannot burn the NFT token
      */
     function _burn(uint256 tokenId) internal virtual override(ERC721, ERC721URIStorage) {}
 
@@ -149,15 +169,18 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * @dev Mint token. Generate token URI and save its URI.
      * @param to address Address of token holder
      * @param boostNumerator uint256 Numerator of the boost factor. Its denominator is 1e12.
+     * @param redeemDeadline uint256 Deadline for redeem a boost.
      * @param boostTypeIndex uint256 Index of the boost type.
      * @param _tokenURI string URI of the boost.
      */
-    function _mintBoost(address to, uint256 boostNumerator, uint256 boostTypeIndex, string memory _tokenURI) private {
+    function _mintBoost(address to, uint256 boostNumerator, uint256 redeemDeadline, uint256 boostTypeIndex, string memory _tokenURI) private {
         // create token
         uint256 tokenId = totalSupply();
         _mint(to, tokenId);
         // save boost factor numerator
         _boostNumerator[tokenId] = boostNumerator;
+        // save redeem deadline
+        _redeemDeadline[tokenId] = redeemDeadline;
         // save boost type id
         _boostTypeIndexOfId[tokenId] = boostTypeIndex;
         // save tokenURI

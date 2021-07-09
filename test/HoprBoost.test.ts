@@ -28,22 +28,27 @@ describe('HoprBoost NFT', function () {
 
     const NAME = 'HOPR Boost NFT';
     const SYMBOL = 'HOPR Boost';
+    const BASIC_START = 1627387200; // July 27 2021 14:00 CET.
+    const PROGRAM_END = 1642424400; // Jan 17 2022 14:00 CET.
     const MINTER_ROLE = utils.keccak256(utils.toUtf8Bytes('MINTER_ROLE'));
     const baseURI = 'hoprboost.eth.link/';
     const BADGES = [
         {
             type: "HODLr",
             rank: "gold",
+            deadline: BASIC_START,
             nominator: "317" // 1% APY
         },
         {
             type: "HODLr",
             rank: "silver",
+            deadline: BASIC_START,
             nominator: "158" // 0.5% APY
         },
         {
             type: "Testnet participant",
             rank: "platinum",
+            deadline: PROGRAM_END,
             nominator: "317" // 1% APY
         }
     ];
@@ -96,7 +101,7 @@ describe('HoprBoost NFT', function () {
         });
         
         it('has no boost factor', async function () {
-            expect((await nftContract.boostFactorOf(constants.Zero)).toString()).to.equal(constants.Zero.toString());
+            expect((await nftContract.boostOf(constants.Zero)).toString()).to.equal([constants.Zero, constants.Zero].join());
         });
 
         it('has type zero for all tokens', async function () {
@@ -107,7 +112,7 @@ describe('HoprBoost NFT', function () {
 
         describe('mint', function () {
             it('allows admin - a minter - to mint', async function () {
-                await nftContract.connect(admin).mint(goldHodlerAddresses[0], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator);
+                await nftContract.connect(admin).mint(goldHodlerAddresses[0], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
             });
 
             it('has total supply of one', async function () {
@@ -115,7 +120,7 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct boost factor', async function () {
-                expect((await nftContract.boostFactorOf(constants.Zero)).toString()).to.equal(BADGES[0].nominator.toString());
+                expect((await nftContract.boostOf(constants.Zero)).toString()).to.equal([BADGES[0].nominator, BADGES[0].deadline].join());
             });
 
             it('has correct type', async function () {
@@ -143,7 +148,7 @@ describe('HoprBoost NFT', function () {
 
         describe('mint one token of existing type', function () {
             it('allows a minter - to mint', async function () {
-                await nftContract.connect(minter2).mint(goldHodlerAddresses[1], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator);
+                await nftContract.connect(minter2).mint(goldHodlerAddresses[1], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
             });
 
             it('has total supply of two', async function () {
@@ -151,7 +156,7 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct boost factor', async function () {
-                expect((await nftContract.boostFactorOf(constants.One)).toString()).to.equal(BADGES[0].nominator.toString());
+                expect((await nftContract.boostOf(constants.One)).toString()).to.equal([BADGES[0].nominator, BADGES[0].deadline].join());
             });
 
             it('has correct type', async function () {
@@ -161,7 +166,7 @@ describe('HoprBoost NFT', function () {
 
         describe('batch mint an existing type', function () {
             it('allows a minter - to mint', async function () {
-                await nftContract.connect(minter2).batchMint(silverHodlerAddresses, BADGES[1].type, BADGES[1].rank, BADGES[1].nominator);
+                await nftContract.connect(minter2).batchMint(silverHodlerAddresses, BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline);
             });
 
             it('has total supply of four', async function () {
@@ -169,7 +174,7 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct boost factor', async function () {
-                expect((await nftContract.boostFactorOf(constants.Two)).toString()).to.equal(BADGES[1].nominator.toString());
+                expect((await nftContract.boostOf(constants.Two)).toString()).to.equal([BADGES[1].nominator, BADGES[1].deadline].join());
             });
 
             it('has correct type', async function () {
@@ -179,7 +184,7 @@ describe('HoprBoost NFT', function () {
 
         describe('batch mint a new type', function () {
             it('allows a minter - to mint', async function () {
-                await nftContract.connect(minter2).batchMint(testnetParticipantAddresses, BADGES[2].type, BADGES[2].rank, BADGES[2].nominator);
+                await nftContract.connect(minter2).batchMint(testnetParticipantAddresses, BADGES[2].type, BADGES[2].rank, BADGES[2].nominator, BADGES[2].deadline);
             });
 
             it('has total supply of seven', async function () {
@@ -187,7 +192,7 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct boost factor', async function () {
-                expect((await nftContract.boostFactorOf(BigNumber.from('6'))).toString()).to.equal(BADGES[2].nominator.toString());
+                expect((await nftContract.boostOf(BigNumber.from('6'))).toString()).to.equal([BADGES[2].nominator, BADGES[2].deadline].join());
             });
 
             it('has correct type', async function () {
