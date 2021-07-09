@@ -18,5 +18,5 @@ interface IHoprBoost is IERC721 {
      * @dev Returns the boost type index associated with ``tokenId``.
      * @param tokenId uint256 token Id of the boost.
      */
-    function typeOf(uint256 tokenId) external view returns (uint256);
+    function typeIndexOf(uint256 tokenId) external view returns (uint256);
 }

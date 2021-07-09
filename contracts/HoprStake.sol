@@ -151,7 +151,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         redeemedNftIndex[from] += 1;
 
         // update boost factor
-        uint256 typeId = nftContract.typeOf(tokenId);
+        uint256 typeId = nftContract.typeIndexOf(tokenId);
         (uint256 factor, uint256 deadline) = nftContract.boostOf(tokenId);
         require(deadline <= block.timestamp, "HoprStake: Cannot redeem an expired boost.");
 
@@ -162,7 +162,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
             uint256 redeemedId = redeemedFactor[from][index];
             (uint256 newFactor, ) = nftContract.boostOf(tokenId);
 
-            if (nftContract.typeOf(redeemedId) == typeId && newFactor <= factor) {
+            if (nftContract.typeIndexOf(redeemedId) == typeId && newFactor <= factor) {
                 redeemedFactor[from][index] = tokenId;
                 emit Redeemed(from, tokenId, false);
                 break;

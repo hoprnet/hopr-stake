@@ -18,6 +18,8 @@ library EnumerableStringSet {
         mapping(string => uint256) _indexes;
     }
 
+    event SetCreated(uint256 indexed typeIndex);
+
     /**
      * @dev Add a value to a set. O(1).
      *
@@ -30,6 +32,7 @@ library EnumerableStringSet {
             // The value is stored at length-1, but we add 1 to all indexes
             // and use 0 as a sentinel value
             set._indexes[value] = set._values.length;
+            emit SetCreated(set._indexes[value]);
             return true;
         } else {
             return false;
@@ -41,6 +44,13 @@ library EnumerableStringSet {
      */
     function contains(StringSet storage set, string memory value) internal view returns (bool) {
         return set._indexes[value] != 0;
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     */
+    function at(StringSet storage set, uint256 index) internal view returns (string memory) {
+        return set._values[index - 1];
     }
 
     /**

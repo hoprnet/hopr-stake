@@ -5,10 +5,7 @@ import{ expect } from "chai";
 import expectRevert from "../utils/exception";
 import { deployContract, deployContract2 } from "../utils/contracts";
 import { shouldSupportInterfaces } from '../utils/interface';
-// import { getParamFromTxResponse } from '../utils/events';
-// import { deployRegistry } from "../utils/registry";
-// import { advanceBlockTo } from "../utils/time";
-// import { getApprovalDigest, signTransactions } from "../utils/digest";
+import { getParamFromTxResponse } from '../utils/events';
 
 describe('HoprBoost NFT', function () {
     let deployer: Signer;
@@ -105,14 +102,15 @@ describe('HoprBoost NFT', function () {
         });
 
         it('has type zero for all tokens', async function () {
-            expect((await nftContract.typeOf(constants.Zero)).toString()).to.equal(constants.Zero.toString());
-            expect((await nftContract.typeOf(constants.One)).toString()).to.equal(constants.Zero.toString());
-            expect((await nftContract.typeOf(constants.Two)).toString()).to.equal(constants.Zero.toString());
+            expect((await nftContract.typeIndexOf(constants.Zero)).toString()).to.equal(constants.Zero.toString());
+            expect((await nftContract.typeIndexOf(constants.One)).toString()).to.equal(constants.Zero.toString());
+            expect((await nftContract.typeIndexOf(constants.Two)).toString()).to.equal(constants.Zero.toString());
         });  
 
         describe('mint', function () {
+            let tx;
             it('allows admin - a minter - to mint', async function () {
-                await nftContract.connect(admin).mint(goldHodlerAddresses[0], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
+                tx = await nftContract.connect(admin).mint(goldHodlerAddresses[0], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
             });
 
             it('has total supply of one', async function () {
@@ -124,8 +122,56 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct type', async function () {
-                expect((await nftContract.typeOf(constants.Zero)).toString()).to.equal(constants.One.toString());
+                expect((await nftContract.typeIndexOf(constants.Zero)).toString()).to.equal(constants.One.toString());
             });   
+            
+            it('emits BoostMinted event', async function () {
+                const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                const boostTypeIndex = await getParamFromTxResponse(
+                    receipt, nftContract.interface.getEvent("BoostMinted").format(), 1, nftContract.address.toLowerCase(), "Mint boost"
+                );
+                const boostNumerator = await getParamFromTxResponse(
+                    receipt, nftContract.interface.getEvent("BoostMinted").format(), 2, nftContract.address.toLowerCase(), "Mint boost"
+                );
+                const redeemDeadline = await getParamFromTxResponse(
+                    receipt, nftContract.interface.getEvent("BoostMinted").format(), 3, nftContract.address.toLowerCase(), "Mint boost"
+                );
+                expect(BigNumber.from(boostTypeIndex).toString()).to.equal(constants.One.toString());
+                expect(BigNumber.from(boostNumerator).toString()).to.equal(BADGES[0].nominator.toString());
+                expect(BigNumber.from(redeemDeadline).toString()).to.equal(BADGES[0].deadline.toString());
+            }); 
+            
+            it('emits SetCreated event', async function () {
+                const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                const typeIndex = await getParamFromTxResponse(
+                    receipt, "SetCreated(uint256)", 1, nftContract.address.toLowerCase(), "Add a type"
+                );
+                expect(BigNumber.from(typeIndex).toString()).to.equal(constants.One.toString());
+            }); 
+            
+            it('emits Transfer event', async function () {
+                const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                const from = await getParamFromTxResponse(
+                    receipt, nftContract.interface.getEvent("Transfer").format(), 1, nftContract.address.toLowerCase(), "Mint boost"
+                );
+                const to = await getParamFromTxResponse(
+                    receipt, nftContract.interface.getEvent("Transfer").format(), 2, nftContract.address.toLowerCase(), "Mint boost"
+                );
+                const tokenId = await getParamFromTxResponse(
+                    receipt, nftContract.interface.getEvent("Transfer").format(), 3, nftContract.address.toLowerCase(), "Mint boost"
+                );
+                expect(from.toString()).to.equal(constants.HashZero);
+                expect(to.toString().slice(-40).toLowerCase()).to.equal(goldHodlerAddresses[0].slice(2).toLowerCase()); // compare bytes32 like address
+                expect(BigNumber.from(tokenId).toString()).to.equal(constants.Zero.toString());
+            }); 
+            
+            it('can find type by token Id', async function () {
+                expect((await nftContract.typeOf(constants.Zero)).toString()).to.equal(BADGES[0].type);
+            });     
+            
+            it('can find type by type index', async function () {
+                expect((await nftContract.typeAt(constants.One)).toString()).to.equal(BADGES[0].type);
+            });     
         });
 
         describe('baseURI', function () {
@@ -160,7 +206,7 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct type', async function () {
-                expect((await nftContract.typeOf(constants.One)).toString()).to.equal(constants.One.toString());
+                expect((await nftContract.typeIndexOf(constants.One)).toString()).to.equal(constants.One.toString());
             });   
         });
 
@@ -178,7 +224,7 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct type', async function () {
-                expect((await nftContract.typeOf(BigNumber.from('3'))).toString()).to.equal(constants.One.toString());
+                expect((await nftContract.typeIndexOf(BigNumber.from('3'))).toString()).to.equal(constants.One.toString());
             });   
         });
 
@@ -196,7 +242,7 @@ describe('HoprBoost NFT', function () {
             });
 
             it('has correct type', async function () {
-                expect((await nftContract.typeOf(BigNumber.from('6'))).toString()).to.equal(constants.Two.toString());
+                expect((await nftContract.typeIndexOf(BigNumber.from('6'))).toString()).to.equal(constants.Two.toString());
             });   
         });
 

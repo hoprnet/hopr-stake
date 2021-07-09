@@ -27,6 +27,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
     mapping(uint256=>uint256) private _redeemDeadline; // tokenId => deadline for redeeming a boost
     mapping(uint256=>uint256) private _boostTypeIndexOfId; // tokenId => boost type index
 
+    event BoostMinted(uint256 indexed boostTypeIndex, uint256 indexed boostNumerator, uint256 indexed redeemDeadline);
     /**
      * @dev Set a new admin role. Set the new admin as a minter. Provide name and symbol for ERC721. 
      * Update the ``_baseTokenURI``.
@@ -50,8 +51,24 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * @dev Returns the boost type index associated with ``tokenId``.
      * @param tokenId uint256 token Id of the boost.
      */
-    function typeOf(uint256 tokenId) external view override returns (uint256) {
+    function typeIndexOf(uint256 tokenId) external view override returns (uint256) {
         return _boostTypeIndexOfId[tokenId];
+    }
+
+    /**
+     * @dev Returns the boost type associated with ``tokenId``.
+     * @param tokenId uint256 token Id of the boost.
+     */
+    function typeOf(uint256 tokenId) external view returns (string memory) {
+        return _boostType.at(_boostTypeIndexOfId[tokenId]);
+    }
+
+    /**
+     * @dev Returns the boost type name associated with ``typeIndex``.
+     * @param typeIndex uint256 Index of the type.
+     */
+    function typeAt(uint256 typeIndex) external view returns (string memory) {
+        return _boostType.at(typeIndex);
     }
 
     /**
@@ -81,6 +98,8 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
         string memory _tokenURI = string(abi.encodePacked(boostType, "/", boostRank));
 
         _mintBoost(to, boostNumerator, redeemDeadline, boostTypeIndex, _tokenURI);
+        
+        emit BoostMinted(boostTypeIndex, boostNumerator, redeemDeadline);
     }
 
     /**
@@ -100,10 +119,12 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
         _boostType.add(boostType);
         uint256 boostTypeIndex = _boostType.indexOf(boostType);
         string memory _tokenURI = string(abi.encodePacked(boostType, "/", boostRank));
-
+        
         for (uint256 index = 0; index < to.length; index++) {
             _mintBoost(to[index], boostNumerator, redeemDeadline, boostTypeIndex, _tokenURI);
         }
+
+        emit BoostMinted(boostTypeIndex, boostNumerator, redeemDeadline);
     }
 
     /**

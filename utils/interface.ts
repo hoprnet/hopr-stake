@@ -56,7 +56,7 @@ const INTERFACES = {
     ],
     IHoprBoost: [
         'boostOf(uint256)',
-        'typeOf(uint256)',
+        'typeIndexOf(uint256)',
     ]
 };
 
