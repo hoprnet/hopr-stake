@@ -36,8 +36,8 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
     uint256 public constant BASIC_FACTOR_NUMERATOR = 5787; // Numerator of the “Basic reward factor”, for all accounts (except for seed investors) that participate in the program. Default value is 5787, which corresponds to 5.787/1e9 per second. Its associated denominator is FACTOR_DENOMINATOR. 
     uint256 public constant SEED_FACTOR_NUMERATOR = 7032; // Numerator of the "Seed reward factor”, for all accounts (except for seed investors) that participate in the program. Default value is 7032, which corresponds to 7.032/1e9 per second. Its associated denominator is FACTOR_DENOMINATOR. 
     uint256 public constant BOOST_CAP = 1e24; // Cap on actual locked tokens for receiving additional boosts.
-    address public constant LOCK_TOKEN = 0xD057604A14982FE8D88c5fC25Aac3267eA142a08; // Token that HOPR holders need to lock to the contract: xHOPR address.
-    address public constant REWARD_TOKEN = 0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1; // Token that HOPR holders can claim as rewards: wxHOPR address
+    address public LOCK_TOKEN = 0xD057604A14982FE8D88c5fC25Aac3267eA142a08; // Token that HOPR holders need to lock to the contract: xHOPR address.
+    address public REWARD_TOKEN = 0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1; // Token that HOPR holders can claim as rewards: wxHOPR address
 
     IHoprBoost public nftContract; // Address of the NFT smart contract.
     mapping(address=>mapping(uint256=>uint256)) public redeemedNft; // Redeemed NFT per account, structured as “account -> index -> NFT tokenId”.
@@ -66,7 +66,16 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
      * @param _nftAddress address Address of the NFT contract.
      * @param _newOwner address Address of the new owner. This new owner can reclaim any ERC20 and ERC721 token being accidentally sent to the lock contract. 
      */
-    constructor(address _nftAddress, address _newOwner) {
+    constructor(address _nftAddress, address _newOwner, address _lockToken, address _rewardToken) {
+        // implement in favor of testing
+        uint chainId;
+        assembly {
+            chainId := chainid()
+        }
+        if (chainId != 100) {
+            LOCK_TOKEN = _lockToken;
+            REWARD_TOKEN = _rewardToken; 
+        }
         nftContract = IHoprBoost(_nftAddress);
         transferOwnership(_newOwner);
         ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
@@ -153,7 +162,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         // update boost factor
         uint256 typeId = nftContract.typeIndexOf(tokenId);
         (uint256 factor, uint256 deadline) = nftContract.boostOf(tokenId);
-        require(deadline <= block.timestamp, "HoprStake: Cannot redeem an expired boost.");
+        require(block.timestamp <= deadline, "HoprStake: Cannot redeem an expired boost.");
 
         uint256 boostIndex = redeemedFactorIndex[from];
         uint256 index = 0;
@@ -172,7 +181,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
             // new type being redeemed.
             redeemedFactor[from][boostIndex] = tokenId;
             redeemedFactorIndex[from] += 1;
-            emit Redeemed(from, tokenId, true);
+            emit Redeemed(from, tokenId, boostIndex == 0 ? false : true);
         }
 
         return IERC721Receiver(address(this)).onERC721Received.selector;

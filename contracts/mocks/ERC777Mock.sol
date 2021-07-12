@@ -8,12 +8,7 @@ import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 contract ERC777Mock is Context, ERC777 {
     event BeforeTokenTransfer();
 
-    constructor(
-        address initialHolder,
-        uint256 initialBalance
-    ) ERC777("ERC777Mock", "M777", new address[](0)) {
-        _mint(initialHolder, initialBalance, "", "");
-    }
+    constructor() ERC777("ERC777Mock", "M777", new address[](0)) {}
 
     function mintInternal(
         address to,

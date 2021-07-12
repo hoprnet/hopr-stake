@@ -23,6 +23,12 @@ contract ERC677Mock is ERC20 {
         _;
     }
 
+    function batchMintInternal(address[] memory _to, uint256 _value) external {
+        for (uint256 index = 0; index < _to.length; index++) {
+            _mint(_to[index], _value);
+        }
+    }
+
     function transferAndCall(address _to, uint256 _value, bytes memory _data) external validRecipient(_to) returns (bool) {
         require(super.transfer(_to, _value));
         emit Transfer(msg.sender, _to, _value, _data);

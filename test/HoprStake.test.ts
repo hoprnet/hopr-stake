@@ -1,12 +1,13 @@
 import { ethers } from 'hardhat'
-import { Contract, Signer, utils } from 'ethers'
+import { BigNumber, constants, Contract, Signer, utils } from 'ethers'
 import { it } from 'mocha';
 import{ expect } from "chai";
 // import expectRevert from "../utils/exception";
-import { deployContract2 } from "../utils/contracts";
+import { deployContract, deployContract2, deployContract4 } from "../utils/contracts";
 import { deployRegistry } from '../utils/registry';
 // import { shouldSupportInterfaces } from '../utils/interface';
-// import { getParamFromTxResponse } from '../utils/events';
+import { getParamFromTxResponse } from '../utils/events';
+import { latestBlock } from '../utils/time';
 
 describe('HoprStake', function () {
     let deployer: Signer;
@@ -20,6 +21,8 @@ describe('HoprStake', function () {
     let nftContract: Contract;
     let stakeContract: Contract;
     let erc1820: Contract;
+    let erc677: Contract;
+    let erc777: Contract;
 
     const BASIC_START = 1627387200; // July 27 2021 14:00 CET.
     const PROGRAM_END = 1642424400; // Jan 17 2022 14:00 CET.
@@ -49,13 +52,19 @@ describe('HoprStake', function () {
 
         // set 1820 registry
         erc1820 = await deployRegistry(deployer);
+        // set stake and reward tokens
+        erc677 = await deployContract(deployer, "ERC677Mock");
+        erc777 = await deployContract(deployer, "ERC777Mock");
+
         // create NFT and stake contract
         nftContract = await deployContract2(deployer, "HoprBoost", adminAddress, "");
-        stakeContract = await deployContract2(deployer, "HoprStake", nftContract.address, adminAddress);
+        stakeContract = await deployContract4(deployer, "HoprStake", nftContract.address, adminAddress, erc677.address, erc777.address);
         // airdrop some NFTs to participants
         await nftContract.connect(admin).batchMint(participantAddresses.slice(0, 2), BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
         await nftContract.connect(admin).mint(participantAddresses[0], BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline);
-        // 
+        // airdrop some ERC677 to participants
+        await erc677.batchMintInternal(participantAddresses, utils.parseUnits('10000', 'ether')); // each participant holds 10k xHOPR
+        await erc777.mintInternal(adminAddress, utils.parseUnits('5000000', 'ether'), '0x', '0x'); // admin account holds 5 million wxHOPR
 
         // -----logs
         console.table([
@@ -79,9 +88,9 @@ describe('HoprStake', function () {
             expect(implementer).to.equal(stakeContract.address);
         })
 
-        // it('has correct symbol', async function () {
-        //     expect((await nftContract.symbol()).toString()).to.equal(SYMBOL);
-        // });
+        it('participants have received ERC721', async function () {
+            expect((await nftContract.tokenOfOwnerByIndex(participantAddresses[0], 0)).toString()).to.equal(constants.Zero.toString());
+        });
 
         // it('has total supply of zero', async function () {
         //     expect((await nftContract.totalSupply()).toString()).to.equal(constants.Zero.toString());
@@ -97,11 +106,16 @@ describe('HoprStake', function () {
         //     expect((await nftContract.typeIndexOf(constants.Two)).toString()).to.equal(constants.Zero.toString());
         // });  
 
-        // describe('mint', function () {
-        //     let tx;
-        //     it('allows admin - a minter - to mint', async function () {
-        //         tx = await nftContract.connect(admin).mint(goldHodlerAddresses[0], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
-        //     });
+        describe('Before program starts', function () {
+            let tx;
+            before(async function () {
+                const block = await latestBlock();
+                console.log(`currentBlock is ${block}, ${BigNumber.from(block).lte(BADGES[0].deadline)}`)
+            })
+
+            it('can redeem HODLr token', async function () {
+                tx = await nftContract.connect(participants[0]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[0], stakeContract.address, 0);
+            });
 
         //     it('has total supply of one', async function () {
         //         expect((await nftContract.totalSupply()).toString()).to.equal(constants.One.toString());
@@ -131,13 +145,22 @@ describe('HoprStake', function () {
         //         expect(BigNumber.from(redeemDeadline).toString()).to.equal(BADGES[0].deadline.toString());
         //     }); 
             
-        //     it('emits SetCreated event', async function () {
-        //         const receipt = await ethers.provider.waitForTransaction(tx.hash);
-        //         const typeIndex = await getParamFromTxResponse(
-        //             receipt, "SetCreated(uint256)", 1, nftContract.address.toLowerCase(), "Add a type"
-        //         );
-        //         expect(BigNumber.from(typeIndex).toString()).to.equal(constants.One.toString());
-        //     }); 
+            it('emits SetCreated event', async function () {
+                const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                const from = await getParamFromTxResponse(
+                    receipt, stakeContract.interface.getEvent("Redeemed").format(), 1, stakeContract.address.toLowerCase(), "Redeem the token"
+                );
+                const tokenId = await getParamFromTxResponse(
+                    receipt, stakeContract.interface.getEvent("Redeemed").format(), 2, stakeContract.address.toLowerCase(), "Redeem the token"
+                );
+                const isReplaced = await getParamFromTxResponse(
+                    receipt, stakeContract.interface.getEvent("Redeemed").format(), 3, stakeContract.address.toLowerCase(), "Redeem the token"
+                );
+
+                expect(from.toString().slice(-40).toLowerCase()).to.equal(participantAddresses[0].slice(2).toLowerCase()); // compare bytes32 like address
+                expect(BigNumber.from(tokenId).toString()).to.equal(constants.Zero.toString());
+                expect(BigNumber.from(isReplaced).toString()).to.equal(constants.Zero.toString());  // true
+            }); 
             
         //     it('emits Transfer event', async function () {
         //         const receipt = await ethers.provider.waitForTransaction(tx.hash);
@@ -162,7 +185,7 @@ describe('HoprStake', function () {
         //     it('can find type by type index', async function () {
         //         expect((await nftContract.typeAt(constants.One)).toString()).to.equal(BADGES[0].type);
         //     });     
-        // });
+        });
 
         // describe('baseURI', function () {
         //     it('fails when non admin sets URI', async function () {

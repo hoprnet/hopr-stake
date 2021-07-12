@@ -25,9 +25,15 @@ const deployContract3 = async (deployer: Signer, contractName: string, arg1: any
     return artifact.deployed();
 }
 
+const deployContract4 = async (deployer: Signer, contractName: string, arg1: any, arg2: any, arg3: any, arg?: any): Promise<Contract> => {
+    const contract = await hre.ethers.getContractFactory(contractName);
+    const artifact = await contract.connect(deployer).deploy(arg1, arg2, arg3, arg);
+    return artifact.deployed();
+}
+
 const connectContract = async (contractName: string, contractAddress: string): Promise<Contract> => {
     const contract = await hre.ethers.getContractFactory(contractName)
     return contract.attach(contractAddress);
 }
 
-export {deployFromBytecode, deployContract, deployContract2, deployContract3, connectContract};
+export {deployFromBytecode, deployContract, deployContract2, deployContract3, deployContract4, connectContract};

@@ -185,6 +185,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * @dev Cannot burn the NFT token
      */
     function _burn(uint256 tokenId) internal virtual override(ERC721, ERC721URIStorage) {}
+    
 
     /**
      * @dev Mint token. Generate token URI and save its URI.
