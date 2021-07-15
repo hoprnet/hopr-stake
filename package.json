@@ -7,7 +7,7 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "chain": "npx hardhat node",
-    "clean": "rimraf ./lib && rimraf ./types",
+    "clean": "rimraf ./lib && rimraf ./types && rimraf ./hardhat",
     "build": "yarn clean && yarn build:sol && tsc && mkdir -p ./lib/chain && cp -R ./chain/abis ./lib/chain/abis",
     "build:sol": "hardhat compile && hardhat extract",
     "test": "hardhat test --no-compile --network hardhat",
