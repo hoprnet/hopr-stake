@@ -1,11 +1,12 @@
 import { ethers } from 'hardhat'
-import { Contract, Signer, constants, BigNumber, utils } from 'ethers'
+import { Contract, Signer, constants, BigNumber } from 'ethers'
 import { it } from 'mocha';
 import{ expect } from "chai";
 import expectRevert from "../utils/exception";
 import { deployContract, deployContract2 } from "../utils/contracts";
 import { shouldSupportInterfaces } from '../utils/interface';
 import { getParamFromTxResponse } from '../utils/events';
+import { BADGES, baseURI, MINTER_ROLE, NAME, SYMBOL } from '../utils/constants';
 
 describe('HoprBoost NFT', function () {
     let deployer: Signer;
@@ -23,32 +24,6 @@ describe('HoprBoost NFT', function () {
     let testnetParticipantAddresses: string[];
     let nftContract: Contract;
 
-    const NAME = 'HOPR Boost NFT';
-    const SYMBOL = 'HOPR Boost';
-    const BASIC_START = 1627387200; // July 27 2021 14:00 CET.
-    const PROGRAM_END = 1642424400; // Jan 17 2022 14:00 CET.
-    const MINTER_ROLE = utils.keccak256(utils.toUtf8Bytes('MINTER_ROLE'));
-    const baseURI = 'hoprboost.eth.link/';
-    const BADGES = [
-        {
-            type: "HODLr",
-            rank: "gold",
-            deadline: BASIC_START,
-            nominator: "317" // 1% APY
-        },
-        {
-            type: "HODLr",
-            rank: "silver",
-            deadline: BASIC_START,
-            nominator: "158" // 0.5% APY
-        },
-        {
-            type: "Testnet participant",
-            rank: "platinum",
-            deadline: PROGRAM_END,
-            nominator: "317" // 1% APY
-        }
-    ];
     
     const reset = async () => {
         let signers: Signer[];
