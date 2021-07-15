@@ -21,6 +21,13 @@ async function main() {
   // Remove previously known address written on build time.
   // fs.unlinkSync(`${config.paths.artifacts}/contracts/contractAddress.ts`);
 
+  // Localhost only multicall to easy read-up values via useDapp
+  const MulticallContract = await ethers.getContractFactory('Multicall');
+  const multicallContract = await MulticallContract.deploy();
+  await multicallContract.deployed();
+  saveFrontendFiles(multicallContract, "MulticallContract");
+  console.log('Multicall deployed to:', multicallContract.address);
+
   // We get the contract to deploy
   const [deployer, admin, minter, alice]: SignerWithAddress[] = await ethers.getSigners();
   const HoprBoostContractFactory: HoprBoost__factory = await ethers.getContractFactory(HOPR_BOOST_CONTRACT);
