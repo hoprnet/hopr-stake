@@ -12,7 +12,9 @@
     "build": "yarn clean && yarn build:sol && mkdir -p ./lib/chain && cp -R ./chain/abis ./lib/chain/abis",
     "build:sol": "hardhat compile && hardhat extract",
     "test": "hardhat test --no-compile --network hardhat",
-    "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy": "hardhat deploy",
+    "deploy:localhost": "yarn deploy",
+    "deploy:xdai": "yarn deploy --network xdai",
     "coverage": "hardhat coverage --network hardhat"
   },
   "files": [
