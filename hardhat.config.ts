@@ -49,7 +49,7 @@ const hardhatConfig: HardhatUserConfig = {
     artifacts: './hardhat/artifacts'
   },
   typechain: {
-    outDir: './types',
+    outDir: './lib/types',
     target: 'ethers-v5'
   },
   etherscan: {

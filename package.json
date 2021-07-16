@@ -1,6 +1,7 @@
 {
-  "name": "hopr-stake",
+  "name": "@hoprnet/hopr-stake",
   "version": "0.1.0",
+  "author": "@hoprnet",
   "description": "HOPR staking incentives",
   "main": "index.js",
   "repository": "git@github.com:hoprnet/hopr-stake.git",
@@ -8,12 +9,15 @@
   "scripts": {
     "chain": "npx hardhat node",
     "clean": "rimraf ./lib && rimraf ./types && rimraf ./hardhat",
-    "build": "yarn clean && yarn build:sol && tsc && mkdir -p ./lib/chain && cp -R ./chain/abis ./lib/chain/abis",
+    "build": "yarn clean && yarn build:sol && mkdir -p ./lib/chain && cp -R ./chain/abis ./lib/chain/abis",
     "build:sol": "hardhat compile && hardhat extract",
     "test": "hardhat test --no-compile --network hardhat",
     "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
     "coverage": "hardhat coverage --network hardhat"
   },
+  "files": [
+    "lib"
+  ],
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.3",

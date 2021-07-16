@@ -1,7 +1,7 @@
 import { Contract, constants, utils } from 'ethers';
 import { config, ethers } from 'hardhat';
 import fs from 'fs';
-import { HoprBoost__factory, HoprStake__factory } from '../types';
+import { HoprBoost__factory, HoprStake__factory } from '../lib/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BADGES, MINTER_ROLE } from '../utils/constants';
 import { deployRegistry } from '../utils/registry';
@@ -30,7 +30,7 @@ async function main() {
 
   // We get the contract to deploy
   const [deployer, admin, minter, alice]: SignerWithAddress[] = await ethers.getSigners();
-  const HoprBoostContractFactory: HoprBoost__factory = await ethers.getContractFactory(HOPR_BOOST_CONTRACT);
+  const HoprBoostContractFactory: HoprBoost__factory = await ethers.getContractFactory(HOPR_BOOST_CONTRACT) as HoprBoost__factory;
   const boostContract = await HoprBoostContractFactory.deploy(await admin.getAddress(), '');
   await boostContract.deployed();
 
@@ -60,7 +60,7 @@ async function main() {
   const adminAddress = await admin.getAddress()
 
   // We deploy the staking contract with a given Boost smart contract using specific (wx)HOPR and (x)HOPR token
-  const HoprStakingContractFactory: HoprStake__factory = await ethers.getContractFactory(HOPR_STAKE_CONTRACT);
+  const HoprStakingContractFactory: HoprStake__factory = await ethers.getContractFactory(HOPR_STAKE_CONTRACT) as HoprStake__factory;
   const stakeContract = await HoprStakingContractFactory.deploy(boostContract.address, adminAddress, erc677.address, erc777.address);
   await stakeContract.deployed();
 
