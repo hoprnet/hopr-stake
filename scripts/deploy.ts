@@ -52,8 +52,10 @@ async function main() {
   // Mock contracts
   const erc677 = await deployContract(deployer, "ERC677Mock");
   await erc677.deployed()
+  saveFrontendFiles(erc677, 'xHOPR');
   const erc777 = await deployContract(deployer, "ERC777Mock");
   await erc777.deployed()
+  saveFrontendFiles(erc777, 'wxHOPR');
 
   const adminAddress = await admin.getAddress()
 
@@ -73,8 +75,8 @@ async function main() {
   await erc777.connect(admin).send(stakeContract.address,utils.parseUnits('1000000', 'ether'), constants.HashZero)
   
   // Printing the deployed contracts information
-  console.log(`ERC677 - wxHOPR (mock) was deployed at ${erc677.address}`)
-  console.log(`ERC777 - xHOPR (mock) was deployed at ${erc777.address}`)
+  console.log(`ERC677 - xHOPR (mock) was deployed at ${erc677.address}`)
+  console.log(`ERC777 - wxHOPR (mock) was deployed at ${erc777.address}`)
   console.log(`${HOPR_STAKE_CONTRACT} was deployed with ${await stakeContract.LOCK_TOKEN()} as LOCK_TOKEN`)
   console.log(`${HOPR_STAKE_CONTRACT} was deployed with ${await stakeContract.REWARD_TOKEN()} as REWARD_TOKEN`) 
   // Showcasing the initial state of the staking contract and admin account
