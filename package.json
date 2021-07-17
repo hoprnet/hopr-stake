@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-stake",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "@hoprnet",
   "description": "HOPR staking incentives",
   "main": "index.js",
@@ -19,7 +19,8 @@
     "coverage": "hardhat coverage --network hardhat"
   },
   "files": [
-    "lib"
+    "lib",
+    "deployments"
   ],
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
