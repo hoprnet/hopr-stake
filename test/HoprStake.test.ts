@@ -2,12 +2,12 @@ import { ethers } from 'hardhat'
 import { BigNumber, constants, Contract, Signer, utils } from 'ethers'
 import { it } from 'mocha';
 import{ expect } from "chai";
-// import expectRevert from "../utils/exception";
+import expectRevert from "../utils/exception";
 import { deployContract, deployContract2, deployContract4 } from "../utils/contracts";
 import { deployRegistry } from '../utils/registry';
 // import { shouldSupportInterfaces } from '../utils/interface';
 import { getParamFromTxResponse } from '../utils/events';
-import { latestBlock } from '../utils/time';
+import { advanceTimeForNextBlock, latestBlock, latestBlockTime } from '../utils/time';
 
 describe('HoprStake', function () {
     let deployer: Signer;
@@ -17,7 +17,7 @@ describe('HoprStake', function () {
     let deployerAddress: string;
     let adminAddress: string;
     let participantAddresses: string[];
-    
+
     let nftContract: Contract;
     let stakeContract: Contract;
     let erc1820: Contract;
@@ -38,9 +38,15 @@ describe('HoprStake', function () {
             rank: "platinum",
             deadline: PROGRAM_END,
             nominator: "317" // 1% APY
+        },
+        {
+            type: "Past",
+            rank: "gold",
+            deadline: 123456, // sometime long long ago
+            nominator: "100"
         }
     ];
-    
+
     const reset = async () => {
         let signers: Signer[];
         [deployer, admin, ...signers] = await ethers.getSigners();
@@ -81,7 +87,7 @@ describe('HoprStake', function () {
             await reset();
         })
 
-        it('can receive ERC777 on HoprStake contract', async function () {
+        it('implements ERC777 tokensReceived hook', async function () {
             const interfaceHash = utils.keccak256(utils.toUtf8Bytes('ERC777TokensRecipient'));
             const implementer = await erc1820.getInterfaceImplementer(stakeContract.address, interfaceHash)
             expect(interfaceHash).to.equal("0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b");
@@ -92,23 +98,98 @@ describe('HoprStake', function () {
             expect((await nftContract.tokenOfOwnerByIndex(participantAddresses[0], 0)).toString()).to.equal(constants.Zero.toString());
         });
 
-        // it('has total supply of zero', async function () {
-        //     expect((await nftContract.totalSupply()).toString()).to.equal(constants.Zero.toString());
-        // });
-        
-        // it('has no boost factor', async function () {
-        //     expect((await nftContract.boostOf(constants.Zero)).toString()).to.equal([constants.Zero, constants.Zero].join());
-        // });
+        describe('LOCK_TOKEN and other ERC677 token', () => {
+                let randomERC677;
+                let tx;
+                
+                it('cannot receive random 677 with `transferAndCall()`', async () => {
+                    randomERC677 = await deployContract(deployer, "ERC677Mock");
+                    await randomERC677.batchMintInternal(participantAddresses, utils.parseUnits('10000', 'ether')); // each participant holds 10k randomERC677
+                    // Revert message was bubbled up, showing only the one from ERC677Mock
+                    expectRevert(randomERC677.connect(participants[2]).transferAndCall(stakeContract.address, constants.One, '0x'), 'ERC677Mock: failed when calling onTokenTransfer');
+                }); 
 
-        // it('has type zero for all tokens', async function () {
-        //     expect((await nftContract.typeIndexOf(constants.Zero)).toString()).to.equal(constants.Zero.toString());
-        //     expect((await nftContract.typeIndexOf(constants.One)).toString()).to.equal(constants.Zero.toString());
-        //     expect((await nftContract.typeIndexOf(constants.Two)).toString()).to.equal(constants.Zero.toString());
-        // });  
+                it('can receive LOCK_TOKEN with `transferAndCall()`', async () => {
+                    expect((await erc677.balanceOf(participantAddresses[0])).toString()).to.equal(utils.parseUnits('10000', 'ether').toString());
+                    tx = await erc677.connect(participants[0]).transferAndCall(stakeContract.address, constants.One, '0x'); // stake LOCK_TOKEN
+                    expect((await erc677.balanceOf(participantAddresses[0])).toString()).to.equal(utils.parseUnits('10000', 'ether').sub(constants.One).toString());
+                });
+
+                it('updates accounts value', async () => {
+                    const currentAccount = await stakeContract.accounts(participantAddresses[0]);
+                    expect(currentAccount[0].toString()).to.equal('1'); // actualLockedTokenAmount
+                    expect(currentAccount[1].toString()).to.equal('0'); // virtualLockedTokenAmount
+                    // skip checking lastSyncTimestamp
+                    expect(currentAccount[3].toString()).to.equal('0'); // cumulatedRewards
+                    expect(currentAccount[4].toString()).to.equal('0'); // claimedRewards
+                });
+
+                it('emits Staked event', async function () {
+                    const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                    const from = await getParamFromTxResponse(
+                        receipt, stakeContract.interface.getEvent("Staked").format(), 1, stakeContract.address.toLowerCase(), "Stake LOCK_TOKEN"
+                    );
+                    const actualAmount = await getParamFromTxResponse(
+                        receipt, stakeContract.interface.getEvent("Staked").format(), 2, stakeContract.address.toLowerCase(), "Stake LOCK_TOKEN"
+                    );
+                    const virtualAmount = await getParamFromTxResponse(
+                        receipt, stakeContract.interface.getEvent("Staked").format(), 3, stakeContract.address.toLowerCase(), "Stake LOCK_TOKEN"
+                    );
+    
+                    expect(from.toString().slice(-40).toLowerCase()).to.equal(participantAddresses[0].slice(2).toLowerCase()); // compare bytes32 like address
+                    expect(BigNumber.from(actualAmount).toString()).to.equal(constants.One.toString());
+                    expect(BigNumber.from(virtualAmount).toString()).to.equal(constants.Zero.toString()); 
+                });
+        });
+
+        describe('REWARD_TOKEN and other ERC777 token', () => {
+                let randomERC777;
+                let tx;
+                
+                it('cannot receive random 777 with `send()`', async () => {
+                    randomERC777 = await deployContract(deployer, "ERC777Mock");
+                    await randomERC777.mintInternal(participantAddresses[2], utils.parseUnits('5000000', 'ether'), '0x', '0x'); // admin account holds 5 million random erc777
+                    expectRevert(randomERC777.connect(participants[2]).send(stakeContract.address, constants.One, '0x'), "HoprStake: Sender must be wxHOPR token");
+                });
+
+                it('cannot receive REWARD_TOKEN from a random account', async () => {
+                    await erc777.mintInternal(participantAddresses[2], constants.One, '0x', '0x'); // admin account holds 1 random REWARD_TOKEN
+                    expectRevert(erc777.connect(participants[2]).send(stakeContract.address, constants.One, '0x'),  "HoprStake: Only accept owner to provide rewards");
+                }); 
+
+                it('can receive REWARD_TOKEN with `send()`', async () => {
+                    expect((await erc777.balanceOf(adminAddress)).toString()).to.equal(utils.parseUnits('5000000', 'ether').toString());
+                    tx = await erc777.connect(admin).send(stakeContract.address, utils.parseUnits('5000000', 'ether'), '0x'); // propide 5 million REWARD_TOKEN
+                    expect((await erc777.balanceOf(adminAddress)).toString()).to.equal(constants.Zero.toString());
+                });
+
+                it('emits RewardFueled event', async function () {
+                    const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                    const amount = await getParamFromTxResponse(
+                        receipt, stakeContract.interface.getEvent("RewardFueled").format(), 1, stakeContract.address.toLowerCase(), "Fuel REWARD_TOKEN"
+                    );
+    
+                    expect(BigNumber.from(amount).toString()).to.equal(utils.parseUnits('5000000', 'ether'));
+                });
+        });
+        
+        describe('nftBoost and other ERC721 tokens', function () {
+            let randomERC721;
+            it ('cannot receive an boost-like random ERC721 token', async () => {
+                randomERC721 = await deployContract2(deployer, "HoprBoost", adminAddress, "");
+                await randomERC721.connect(admin).mint(participantAddresses[0], BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline);
+                expectRevert(randomERC721.connect(participants[0]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[0], stakeContract.address, 0), "HoprStake: Cannot SafeTransferFrom tokens other than HoprBoost.");
+            });
+            it ('cannot redeem a boost when the deadline has passed', async () => {
+                // create the 3th NFT.
+                await nftContract.connect(admin).mint(participantAddresses[2], BADGES[2].type, BADGES[2].rank, BADGES[2].nominator, BADGES[2].deadline);
+                expectRevert(nftContract.connect(participants[2]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[2], stakeContract.address, 3), "HoprStake: Cannot redeem an expired boost.");
+            });
+        });
 
         describe('Before program starts', function () {
             let tx;
-            before(async function () {
+            it('checks current block', async function () {
                 const block = await latestBlock();
                 console.log(`currentBlock is ${block}, ${BigNumber.from(block).lte(BADGES[0].deadline)}`)
             })
@@ -117,34 +198,6 @@ describe('HoprStake', function () {
                 tx = await nftContract.connect(participants[0]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[0], stakeContract.address, 0);
             });
 
-        //     it('has total supply of one', async function () {
-        //         expect((await nftContract.totalSupply()).toString()).to.equal(constants.One.toString());
-        //     });
-
-        //     it('has correct boost factor', async function () {
-        //         expect((await nftContract.boostOf(constants.Zero)).toString()).to.equal([BADGES[0].nominator, BADGES[0].deadline].join());
-        //     });
-
-        //     it('has correct type', async function () {
-        //         expect((await nftContract.typeIndexOf(constants.Zero)).toString()).to.equal(constants.One.toString());
-        //     });   
-            
-        //     it('emits BoostMinted event', async function () {
-        //         const receipt = await ethers.provider.waitForTransaction(tx.hash);
-        //         const boostTypeIndex = await getParamFromTxResponse(
-        //             receipt, nftContract.interface.getEvent("BoostMinted").format(), 1, nftContract.address.toLowerCase(), "Mint boost"
-        //         );
-        //         const boostNumerator = await getParamFromTxResponse(
-        //             receipt, nftContract.interface.getEvent("BoostMinted").format(), 2, nftContract.address.toLowerCase(), "Mint boost"
-        //         );
-        //         const redeemDeadline = await getParamFromTxResponse(
-        //             receipt, nftContract.interface.getEvent("BoostMinted").format(), 3, nftContract.address.toLowerCase(), "Mint boost"
-        //         );
-        //         expect(BigNumber.from(boostTypeIndex).toString()).to.equal(constants.One.toString());
-        //         expect(BigNumber.from(boostNumerator).toString()).to.equal(BADGES[0].nominator.toString());
-        //         expect(BigNumber.from(redeemDeadline).toString()).to.equal(BADGES[0].deadline.toString());
-        //     }); 
-            
             it('emits SetCreated event', async function () {
                 const receipt = await ethers.provider.waitForTransaction(tx.hash);
                 const from = await getParamFromTxResponse(
@@ -160,147 +213,24 @@ describe('HoprStake', function () {
                 expect(from.toString().slice(-40).toLowerCase()).to.equal(participantAddresses[0].slice(2).toLowerCase()); // compare bytes32 like address
                 expect(BigNumber.from(tokenId).toString()).to.equal(constants.Zero.toString());
                 expect(BigNumber.from(isReplaced).toString()).to.equal(constants.Zero.toString());  // true
-            }); 
-            
-        //     it('emits Transfer event', async function () {
-        //         const receipt = await ethers.provider.waitForTransaction(tx.hash);
-        //         const from = await getParamFromTxResponse(
-        //             receipt, nftContract.interface.getEvent("Transfer").format(), 1, nftContract.address.toLowerCase(), "Mint boost"
-        //         );
-        //         const to = await getParamFromTxResponse(
-        //             receipt, nftContract.interface.getEvent("Transfer").format(), 2, nftContract.address.toLowerCase(), "Mint boost"
-        //         );
-        //         const tokenId = await getParamFromTxResponse(
-        //             receipt, nftContract.interface.getEvent("Transfer").format(), 3, nftContract.address.toLowerCase(), "Mint boost"
-        //         );
-        //         expect(from.toString()).to.equal(constants.HashZero);
-        //         expect(to.toString().slice(-40).toLowerCase()).to.equal(goldHodlerAddresses[0].slice(2).toLowerCase()); // compare bytes32 like address
-        //         expect(BigNumber.from(tokenId).toString()).to.equal(constants.Zero.toString());
-        //     }); 
-            
-        //     it('can find type by token Id', async function () {
-        //         expect((await nftContract.typeOf(constants.Zero)).toString()).to.equal(BADGES[0].type);
-        //     });     
-            
-        //     it('can find type by type index', async function () {
-        //         expect((await nftContract.typeAt(constants.One)).toString()).to.equal(BADGES[0].type);
-        //     });     
+            });
         });
-
-        // describe('baseURI', function () {
-        //     it('fails when non admin sets URI', async function () {
-        //         expectRevert(nftContract.connect(deployer).updateBaseURI(baseURI), `AccessControl: account ${deployerAddress.toLowerCase()} is missing role ${constants.HashZero}`);
-        //     });
-
-        //     it('minted tokens has the corect URI', async function () {
-        //         expect((await nftContract.tokenURI(constants.Zero)).toString()).to.equal(`${""}${BADGES[0].type}/${BADGES[0].rank}`);
-        //     });
-
-        //     it('admin can set', async function () {
-        //         await nftContract.connect(admin).updateBaseURI(baseURI);
-        //     });
-
-        //     it('minted tokens has the updated URI', async function () {
-        //         expect((await nftContract.tokenURI(constants.Zero)).toString()).to.equal(`${baseURI}${BADGES[0].type}/${BADGES[0].rank}`);
-        //     });
-        // });
-
-        // describe('mint one token of existing type', function () {
-        //     it('allows a minter - to mint', async function () {
-        //         await nftContract.connect(minter2).mint(goldHodlerAddresses[1], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
-        //     });
-
-        //     it('has total supply of two', async function () {
-        //         expect((await nftContract.totalSupply()).toString()).to.equal(constants.Two.toString());
-        //     });
-
-        //     it('has correct boost factor', async function () {
-        //         expect((await nftContract.boostOf(constants.One)).toString()).to.equal([BADGES[0].nominator, BADGES[0].deadline].join());
-        //     });
-
-        //     it('has correct type', async function () {
-        //         expect((await nftContract.typeIndexOf(constants.One)).toString()).to.equal(constants.One.toString());
-        //     });   
-        // });
-
-        // describe('batch mint an existing type', function () {
-        //     it('allows a minter - to mint', async function () {
-        //         await nftContract.connect(minter2).batchMint(silverHodlerAddresses, BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline);
-        //     });
-
-        //     it('has total supply of four', async function () {
-        //         expect((await nftContract.totalSupply()).toString()).to.equal(BigNumber.from('4').toString());
-        //     });
-
-        //     it('has correct boost factor', async function () {
-        //         expect((await nftContract.boostOf(constants.Two)).toString()).to.equal([BADGES[1].nominator, BADGES[1].deadline].join());
-        //     });
-
-        //     it('has correct type', async function () {
-        //         expect((await nftContract.typeIndexOf(BigNumber.from('3'))).toString()).to.equal(constants.One.toString());
-        //     });   
-        // });
-
-        // describe('batch mint a new type', function () {
-        //     it('allows a minter - to mint', async function () {
-        //         await nftContract.connect(minter2).batchMint(testnetParticipantAddresses, BADGES[2].type, BADGES[2].rank, BADGES[2].nominator, BADGES[2].deadline);
-        //     });
-
-        //     it('has total supply of seven', async function () {
-        //         expect((await nftContract.totalSupply()).toString()).to.equal(BigNumber.from('7').toString());
-        //     });
-
-        //     it('has correct boost factor', async function () {
-        //         expect((await nftContract.boostOf(BigNumber.from('6'))).toString()).to.equal([BADGES[2].nominator, BADGES[2].deadline].join());
-        //     });
-
-        //     it('has correct type', async function () {
-        //         expect((await nftContract.typeIndexOf(BigNumber.from('6'))).toString()).to.equal(constants.Two.toString());
-        //     });   
-        // });
-
-        // describe('should support interface', function () {
-        //     it('has correct type', async function () {
-        //         const contract = await deployContract2(deployer, "HoprBoost", adminAddress, baseURI);
-        //         shouldSupportInterfaces(contract, [
-        //             'IHoprBoost', 'ERC165','AccessControlEnumerable', 'ERC721', 'ERC721Enumerable'
-        //         ])
-        //     }); 
-        // });
-        
-        // describe('claim ERC20 tokens from the NFT contract', function () {
-        //     let erc20;
-        //     before(async function () {
-        //         erc20 = await deployContract2(deployer, "ERC20Mock", nftContract.address, constants.One);
-        //     })
-
-        //     it('has one mock erc20 token', async function () {
-        //         expect((await erc20.balanceOf(nftContract.address)).toString()).to.equal(constants.One.toString());
-        //     }); 
-
-        //     it('admin can reclaim erc20 token', async function () {
-        //         await nftContract.connect(admin).reclaimErc20Tokens(erc20.address);
-        //         expect((await erc20.balanceOf(nftContract.address)).toString()).to.equal(constants.Zero.toString());
-        //         expect((await erc20.balanceOf(adminAddress)).toString()).to.equal(constants.One.toString());
-        //     }); 
-        // });
-
-        // describe('claim ERC721 tokens from the NFT contract', function () {
-        //     let erc721;
-        //     before(async function () {
-        //         erc721 = await deployContract(deployer, "ERC721Mock");
-        //         await erc721.mint(nftContract.address, 3);
-        //     })
-
-        //     it('has one mock erc721 token', async function () {
-        //         expect((await erc721.balanceOf(nftContract.address)).toString()).to.equal(constants.One.toString());
-        //     }); 
-
-        //     it('admin can reclaim erc721 token', async function () {
-        //         await nftContract.connect(admin).reclaimErc721Tokens(erc721.address, 3);
-        //         expect((await erc721.balanceOf(nftContract.address)).toString()).to.equal(constants.Zero.toString());
-        //         expect((await erc721.balanceOf(adminAddress)).toString()).to.equal(constants.One.toString());
-        //     }); 
-        // });
+        describe('At BASIC_START', function () {
+            it('advance block to BASIC_START', async function () {
+                const [lastBlockTime, lastBlockNumber] = await latestBlockTime();
+                console.log(`lastBlock ${lastBlockNumber} is at time ${lastBlockTime}.`)
+                await advanceTimeForNextBlock(BASIC_START);
+                const [blockTime, blockNumber] = await latestBlockTime();
+                console.log(`currentBlock ${blockNumber} is at time ${blockTime}.`)
+            });
+            it('gets the cumulated rewards after BASIC_START', async function () {
+                const reward = await stakeContract.getCumulatedRewardsIncrement(participantAddresses[0]);
+                const [blockTime, blockNumber] = await latestBlockTime();
+                console.log(`Reward is ${reward.toString()}. currentBlock ${blockNumber} is at time ${blockTime}.`)
+            });
+            // 1626517819.
+            // 1627387200
+            // 1626517783153.
+        });
     });
 });

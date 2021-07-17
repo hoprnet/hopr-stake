@@ -13,7 +13,7 @@ contract ERC677Mock is ERC20 {
     using Address for address; 
     bytes4 internal constant ON_TOKEN_TRANSFER = 0xa4c0ed36; // onTokenTransfer(address,uint256,bytes)
 
-    event Transfer(address indexed from, address indexed to, uint256 value, bytes data);
+    event TransferAndCall(address indexed from, address indexed to, uint256 value, bytes data);
 
     constructor() ERC20("ERC677Mock", "M677") {}
 
@@ -31,11 +31,11 @@ contract ERC677Mock is ERC20 {
 
     function transferAndCall(address _to, uint256 _value, bytes memory _data) external validRecipient(_to) returns (bool) {
         require(super.transfer(_to, _value));
-        emit Transfer(msg.sender, _to, _value, _data);
+        emit TransferAndCall(msg.sender, _to, _value, _data);
 
         if (_to.isContract()) {
           (bool success, ) = _to.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, msg.sender, _value, _data));
-          require(success);
+          require(success, 'ERC677Mock: failed when calling onTokenTransfer');
         }
         return true;
     }

@@ -7,6 +7,12 @@ const latestBlock = async () => {
     return hre.ethers.provider.getBlockNumber();
 }
 
+const latestBlockTime = async ():Promise<[number, number]> => {
+  const latest = await latestBlock();
+  const block = await hre.ethers.provider.getBlock(latest);
+  return [block.timestamp, block.number];
+}
+
 const advanceBlock = async() => {
   try {
     await hre.ethers.provider.send("evm_mine", [new Date().getTime()]);
@@ -35,4 +41,9 @@ const advanceBlockTo = async (target: number) => {
       }
 }
 
-export { latestBlock, advanceBlockTo};
+const advanceTimeForNextBlock = async (blockTimestampInSec: number) => {
+  await hre.ethers.provider.send("evm_setNextBlockTimestamp", [blockTimestampInSec])
+  await hre.ethers.provider.send("evm_mine", [new Date().getTime()])
+}
+
+export { latestBlock, latestBlockTime, advanceBlockTo, advanceTimeForNextBlock};
