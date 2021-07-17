@@ -1,4 +1,0 @@
-export const MulticallContract = '0x92328957f53321379CA7c40437d7f52375C18958'
-export const HoprBoost = '0xf21261Fa529Fa59b9f55f44f123cdA3346454a88'
-export const xHOPR = '0x796fF42dc450a5f1F4D2ed7e23F08E844FB8AAD3'
-export const wxHOPR = '0xa34332b2681F31F24D06f90D1Bb79f4ef7e73A5E'

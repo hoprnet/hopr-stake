@@ -13,7 +13,7 @@
       "outDir": "lib",
       "resolveJsonModule": true,
     },
-    "include": ["hardhat.config.ts", "index.ts", "test", "tasks", "utils", "chain", "deploy/00_initial_setup.ts"],
+    "include": ["hardhat.config.ts", "index.ts", "test", "tasks", "utils", "deploy"],
     "exclude": ["lib", "types", "node_modules"],
   }
   

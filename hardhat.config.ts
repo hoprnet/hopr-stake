@@ -1,25 +1,15 @@
 require("dotenv").config();
-import { HardhatUserConfig, task } from "hardhat/config";
-// import { HardhatUserConfig, task, types } from 'hardhat/config'
-// import 'hardhat-typechain'
+import { task } from "hardhat/config";
+import { HardhatUserConfig } from "hardhat/types"
+import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
-import "hardhat-deploy";
 import "solidity-coverage";
-const { DEPLOYER_PRIVATE_KEY, ADMIN_ACCOUNT, ALICE, QUIKNODE_KEY } = process.env;
-
-// // This is a sample Hardhat task. To learn how to create your own go to
-// // https://hardhat.org/guides/create-task.html
-// task("accounts", "Prints the list of accounts", async (args, hre) => {
-//   const accounts = await hre.ethers.getSigners();
-
-//   for (const account of accounts) {
-//     console.log(await account.address);
-//   }
-// });
+const { DEPLOYER_PRIVATE_KEY, ADMIN_ACCOUNT, ALICE, QUIKNODE_KEY, INFURA_KEY } = process.env;
 
 const { ETHERSCAN } = process.env;
 
@@ -37,6 +27,18 @@ const hardhatConfig: HardhatUserConfig = {
         ? [DEPLOYER_PRIVATE_KEY, ADMIN_ACCOUNT, ALICE]
         : [],
     },
+    goerli: {
+      chainId: 5,
+      url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
+      accounts: DEPLOYER_PRIVATE_KEY
+        ? [DEPLOYER_PRIVATE_KEY, ADMIN_ACCOUNT, ALICE]
+        : [],
+    },
+  },
+  namedAccounts: {
+    deployer: 0,
+    admin: 1,
+    alice: 2
   },
   solidity: {
     compilers: [
@@ -56,7 +58,6 @@ const hardhatConfig: HardhatUserConfig = {
     tests: "./test",
     cache: "./hardhat/cache",
     artifacts: "./hardhat/artifacts",
-    deployments: "./deployments",
   },
   typechain: {
     outDir: "./lib/types",
