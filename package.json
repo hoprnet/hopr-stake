@@ -1,22 +1,26 @@
 {
   "name": "@hoprnet/hopr-stake",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "@hoprnet",
   "description": "HOPR staking incentives",
   "main": "index.js",
   "repository": "git@github.com:hoprnet/hopr-stake.git",
   "license": "GPL-3.0-only",
   "scripts": {
-    "chain": "npx hardhat node",
+    "chain": "npx hardhat node --network hardhat",
     "clean": "rimraf ./lib && rimraf ./types && rimraf ./hardhat",
     "build": "yarn clean && yarn build:sol && mkdir -p ./lib/chain && cp -R ./chain/abis ./lib/chain/abis",
     "build:sol": "hardhat compile && hardhat extract",
     "test": "hardhat test --no-compile --network hardhat",
-    "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy": "hardhat deploy",
+    "deploy:localhost": "yarn deploy",
+    "deploy:goerli": "yarn deploy --network goerli",
+    "deploy:xdai": "yarn deploy --network xdai",
     "coverage": "hardhat coverage --network hardhat"
   },
   "files": [
-    "lib"
+    "lib",
+    "deployments"
   ],
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -36,6 +40,8 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.1",
     "hardhat": "^2.4.1",
+    "hardhat-deploy": "^0.8.11",
+    "hardhat-deploy-ethers": "^0.3.0-beta.10",
     "hardhat-typechain": "^0.3.5",
     "rimraf": "^3.0.2",
     "solidity-coverage": "^0.7.16",
