@@ -246,6 +246,11 @@ describe('HoprStake', function () {
             it ('has nothing to claim', async () => {
                 expectRevert(stakeContract.claimRewards(participantAddresses[0]), 'HoprStake: Nothing to claim');
             });
+            it ('can redeem token #1 and stake some tokens', async () => {
+                await nftContract.connect(participants[1]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[1], stakeContract.address, 1);
+                await erc677.connect(participants[1]).transferAndCall(stakeContract.address, utils.parseUnits('1.'), '0x');
+
+            });
         });
         describe('At BASIC_START', function () {
             it('succeeds in advancing block to BASIC_START', async function () {
@@ -429,6 +434,63 @@ describe('HoprStake', function () {
                 await stakeContract.sync(participantAddresses[2]);
                 console.log(JSON.stringify(await stakeContract.accounts(participantAddresses[0]).toString()));
             });
+        });
+        describe('After PROGRAM_END', function () {
+            let tx;
+            it('succeeds in advancing block to PROGRAM_END+1', async function () {
+                await advanceTimeForNextBlock(PROGRAM_END+1);
+                const [blockTime, _] = await latestBlockTime();
+                expect(blockTime.toString()).to.equal((PROGRAM_END+1).toString()); 
+            });
+
+            it('cannot receive random 677 with `transferAndCall()`', async () => {
+                // bubbled up
+                expectRevert(erc677.connect(participants[1]).transferAndCall(stakeContract.address, constants.One, '0x'), 'ERC677Mock: failed when calling onTokenTransfer');
+            }); 
+            it('cannot redeem NFT`', async () => {
+                // created 6th NFT
+                await nftContract.connect(admin).mint(participantAddresses[1], BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline);
+                expectRevert(nftContract.connect(participants[1]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[1], stakeContract.address, 6), 'HoprStake: Program ended, cannot redeem boosts.');
+            }); 
+            it('cannot lock', async () => {
+                expectRevert(stakeContract.connect(admin).lock([participantAddresses[0]], ['1']), 'HoprStake: Program ended, cannot stake anymore.');
+            }); 
+            it('can unlock', async () => {
+                tx = await stakeContract.connect(participants[1]).unlock(participantAddresses[1]);
+            }); 
+            it('reclaims rewards', async () => {
+                const rewards = calculateRewards(1, PROGRAM_END-BASIC_START, [BASIC_FACTOR_NUMERATOR, parseInt(BADGES[0].nominator)]);
+                const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                const account = await getParamFromTxResponse(
+                    receipt, stakeContract.interface.getEvent("Claimed").format(), 1, stakeContract.address.toLowerCase(), "Lock the token"
+                );
+                const reward = await getParamFromTxResponse(
+                    receipt, stakeContract.interface.getEvent("Claimed").format(), 2, stakeContract.address.toLowerCase(), "Lock the token"
+                );
+
+                expect(account.toString().slice(-40).toLowerCase()).to.equal(participantAddresses[1].slice(2).toLowerCase()); // compare bytes32 like address
+                expect(BigNumber.from(reward).toString()).to.equal(rewards);  // true
+            }); 
+            it('receives original tokens - Released event ', async () => {
+                const receipt = await ethers.provider.waitForTransaction(tx.hash);
+                const account = await getParamFromTxResponse(
+                    receipt, stakeContract.interface.getEvent("Released").format(), 1, stakeContract.address.toLowerCase(), "Lock the token"
+                );
+                const actualStake = await getParamFromTxResponse(
+                    receipt, stakeContract.interface.getEvent("Released").format(), 2, stakeContract.address.toLowerCase(), "Lock the token"
+                );
+
+                expect(account.toString().slice(-40).toLowerCase()).to.equal(participantAddresses[1].slice(2).toLowerCase()); // compare bytes32 like address
+                expect(BigNumber.from(actualStake).toString()).to.equal(utils.parseUnits('1.0', 'ether').toString());  // true
+            }); 
+            it('receives original tokens - total balance matches old one ', async () => {
+                const balance = await erc677.balanceOf(participantAddresses[1]);
+                expect(BigNumber.from(balance).toString()).to.equal(utils.parseUnits('10000', 'ether').toString());  // true
+            }); 
+            it('receives NFTs', async () => {
+                const owner = await nftContract.ownerOf(6);
+                expect(owner).to.equal(participantAddresses[1]); // compare bytes32 like address
+            }); 
         });
     });
 });
