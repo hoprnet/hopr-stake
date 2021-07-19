@@ -89,7 +89,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * @param boostType string Type of the boost
      * @param boostRank string Rank of the boost
      * @param boostNumerator uint256 Numerator of the boost factor. Its denominator is 1e12.
-     * @param redeemDeadline uint256 Deadline for redeem a boost.
+     * @param redeemDeadline uint256 Deadline for redeem a boost. Epoch Unix Timestamp. 
      */
     function mint(address to, string memory boostType, string memory boostRank, uint256 boostNumerator, uint256 redeemDeadline) external onlyRole(MINTER_ROLE) {
         // register boost type in the smart contract
@@ -112,7 +112,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * @param boostType string Type of the boost
      * @param boostRank string Rank of the boost
      * @param boostNumerator uint256 Numerator of the boost factor. Its denominator is 1e12.
-     * @param redeemDeadline uint256 Deadline for redeem a boost.
+     * @param redeemDeadline uint256 Deadline for redeem a boost. Epoch Unix Timestamp
      */
     function batchMint(address[] calldata to, string calldata boostType, string calldata boostRank, uint256 boostNumerator, uint256 redeemDeadline) external onlyRole(MINTER_ROLE) {
         // register boost type in the smart contract
@@ -191,7 +191,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * @dev Mint token. Generate token URI and save its URI.
      * @param to address Address of token holder
      * @param boostNumerator uint256 Numerator of the boost factor. Its denominator is 1e12.
-     * @param redeemDeadline uint256 Deadline for redeem a boost.
+     * @param redeemDeadline uint256 Deadline for redeem a boost. Epoch Unix Timestamp
      * @param boostTypeIndex uint256 Index of the boost type.
      * @param _tokenURI string URI of the boost.
      */

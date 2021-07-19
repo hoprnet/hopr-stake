@@ -57,7 +57,7 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
     event Staked(address indexed account, uint256 indexed actualAmount, uint256 indexed virtualAmount);
     event Released(address indexed account, uint256 indexed actualAmount, uint256 indexed virtualAmount);
     event RewardFueled(uint256 indexed amount);
-    event Redeemed(address indexed account, uint256 indexed boostTokenId, bool indexed factorReplaced);
+    event Redeemed(address indexed account, uint256 indexed boostTokenId, bool indexed factorRegistered);
     event Claimed(address indexed account, uint256 indexed rewardAmount);
 
     /**
@@ -169,11 +169,13 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
         for (index; index < boostIndex; index++) {
             // loop through redeemed factors, replace the factor of the same type, if the current factor is larger.
             uint256 redeemedId = redeemedFactor[from][index];
-            (uint256 newFactor, ) = nftContract.boostOf(tokenId);
+            (uint256 redeemedFactorValue, ) = nftContract.boostOf(redeemedId);
 
-            if (nftContract.typeIndexOf(redeemedId) == typeId && newFactor <= factor) {
-                redeemedFactor[from][index] = tokenId;
-                emit Redeemed(from, tokenId, false);
+            if (nftContract.typeIndexOf(redeemedId) == typeId) {
+                if (redeemedFactorValue < factor) {
+                    redeemedFactor[from][index] = tokenId;
+                }
+                emit Redeemed(from, tokenId, redeemedFactorValue < factor);
                 break;
             }
         }
@@ -181,27 +183,29 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
             // new type being redeemed.
             redeemedFactor[from][boostIndex] = tokenId;
             redeemedFactorIndex[from] += 1;
-            emit Redeemed(from, tokenId, boostIndex == 0 ? false : true);
+            emit Redeemed(from, tokenId, true);
         }
 
         return IERC721Receiver(address(this)).onERC721Received.selector;
     }
 
     /**
-    * @dev Only owner can call this function before program starts to store virtual lock for seed investors. 
+    * @dev Only owner can call this function to store virtual lock for seed investors. 
     * If the investor hasn't locked any token in this account, create an "Account" with {0, caps[i], block.timestamp, 0, 0}. 
     * If the investor has locked some tokens in this account, update its “virtualLockedTokenAmount”.
+    * This function can be called at anytime of the program.
     * @param investors address[] Array of seed investors accounts.
     * @param caps uint256[] Array of their virtually locked tokens.
     */
     function lock(address[] calldata investors, uint256[] calldata caps) onlyOwner external {
-        require(block.timestamp <= BASIC_START, "HoprStake: Program ended, cannot stake anymore.");
-        require(investors.length <= caps.length, "HoprStake: Length does not match");
+        require(block.timestamp <= PROGRAM_END, "HoprStake: Program ended, cannot stake anymore.");
+        require(investors.length == caps.length, "HoprStake: Length does not match");
 
         for (uint256 index = 0; index < investors.length; index++) { 
             address investor = investors[index];
+            _sync(investor);
             accounts[investor].virtualLockedTokenAmount += caps[index];
-            accounts[investor].lastSyncTimestamp = block.timestamp;
+            // accounts[investor].lastSyncTimestamp = block.timestamp;
             emit Staked(investor, 0, caps[index]);
         }
     }
