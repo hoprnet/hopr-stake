@@ -72,4 +72,14 @@ task("extract", "Extract ABIs to specified folder", async (...args: any[]) => {
   return (await import("./tasks/extract")).default(args[0], args[1], args[2]);
 }).addFlag("target", "Folder to output contents to");
 
+task('mint', "Mints a demo NFT to a specific account", async (...args: any[]) => {
+  return (await import('./tasks/mint')).default(args[0], args[1], args[2])
+})
+  .addParam<string>('address', 'Ethereum address')
+
+task('updateBaseURI', "Updates the base URI of all the NFTs in the smart contract", async (...args: any[]) => {
+  return (await import('./tasks/updateBaseURI')).default(args[0], args[1], args[2])
+})
+  .addParam<string>('url', 'Base URL')
+
 export default hardhatConfig;

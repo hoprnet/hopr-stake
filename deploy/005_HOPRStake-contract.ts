@@ -6,7 +6,7 @@ const main: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
 
   const { deploy } = deployments;
-  const { deployer, admin } = await getNamedAccounts();
+  const { deployer, admin, alice } = await getNamedAccounts();
 
   const HoprBoost = await deployments.get("HoprBoost");
   const xHOPR = await deployments.get("xHOPR");
@@ -15,10 +15,12 @@ const main: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // We verify the address we will be passing to our contract
   console.table([
     ['From Deployments', 'Addresses'], 
-    ['wxHOPR', xHOPR.address],
-    ['xHOPR', wxHOPR.address],
+    ['wxHOPR', wxHOPR.address],
+    ['xHOPR', xHOPR.address],
     ['HoprBoost', HoprBoost.address],
-    ['Admin', admin]
+    ['Deployer', deployer],
+    ['Admin', admin],
+    ['Alice', alice]
   ])
 
   await deploy("HoprStake", {
