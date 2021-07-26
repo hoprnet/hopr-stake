@@ -16,7 +16,12 @@
     "deploy:localhost": "yarn deploy",
     "deploy:goerli": "yarn deploy --network goerli",
     "deploy:xdai": "yarn deploy --network xdai",
-    "coverage": "hardhat coverage --network hardhat"
+    "coverage": "hardhat coverage --network hardhat",
+    "batchmint": "hardhat batchMint --network xdai",
+    "batchmint:diamond": "hardhat batchMint --network xdai --rank diamond",
+    "batchmint:gold": "hardhat batchMint --network xdai --rank gold",
+    "batchmint:silver": "hardhat batchMint --network xdai --rank silver",
+    "batchmint:bronze": "hardhat batchMint --network xdai --rank bronze"
   },
   "files": [
     "lib",

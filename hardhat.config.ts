@@ -9,7 +9,7 @@ import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
 import "solidity-coverage";
-const { DEPLOYER_PRIVATE_KEY, ADMIN_ACCOUNT, ALICE, QUIKNODE_KEY, INFURA_KEY } = process.env;
+const { MINTER_KEY, QUIKNODE_KEY } = process.env;
 
 const { ETHERSCAN } = process.env;
 
@@ -23,15 +23,8 @@ const hardhatConfig: HardhatUserConfig = {
     xdai: {
       chainId: 100,
       url: `https://still-patient-forest.xdai.quiknode.pro/${QUIKNODE_KEY}/`,
-      accounts: DEPLOYER_PRIVATE_KEY
-        ? [DEPLOYER_PRIVATE_KEY, ADMIN_ACCOUNT, ALICE]
-        : [],
-    },
-    goerli: {
-      chainId: 5,
-      url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
-      accounts: DEPLOYER_PRIVATE_KEY
-        ? [DEPLOYER_PRIVATE_KEY, ADMIN_ACCOUNT, ALICE]
+      accounts: MINTER_KEY
+        ? [MINTER_KEY]
         : [],
     },
   },
@@ -76,6 +69,11 @@ task('mint', "Mints a demo NFT to a specific account", async (...args: any[]) =>
   return (await import('./tasks/mint')).default(args[0], args[1], args[2])
 })
   .addParam<string>('address', 'Ethereum address')
+task('batchMint', "Mints a demo NFT to a specific account", async (...args: any[]) => {
+  return (await import('./tasks/batchMint')).default(args[0], args[1], args[2])
+})
+.addParam<string>('rank', 'NFT rank')
+
 
 task('updateBaseURI', "Updates the base URI of all the NFTs in the smart contract", async (...args: any[]) => {
   return (await import('./tasks/updateBaseURI')).default(args[0], args[1], args[2])
