@@ -3,7 +3,9 @@ import { HoprBoost } from "../lib/types/HoprBoost"
 // import { DIAMONDS } from "../json/diamond";
 // import { GOLD } from "../json/gold";
 // import { SILVER } from "../json/silver";
-import { BRONZE } from "../json/bronze";
+// import { BRONZE } from "../json/bronze";
+// import { DIAMONDS } from "../json/diamondPatch1";
+import { SILVER } from "../json/silverPatch1";
 import { ContractTransaction } from 'ethers';
 
 const BOOST_CONTRACT = '0x43d13D7B83607F14335cF2cB75E87dA369D056c7';
@@ -24,6 +26,7 @@ const BOOST = {
 
 /**
  * Batch mint HODLr NFTs
+ * Please change L.40 to a json file.
  */
 async function main(
     { rank }: { rank: string },
@@ -34,7 +37,7 @@ async function main(
     const signers = await ethers.getSigners();
     const minter = signers[0];
     // const list = LIST[rank];
-    const list = BRONZE;
+    const list = SILVER;
     console.log(list.length, list[0].length);
 
     // boost
@@ -45,21 +48,6 @@ async function main(
         network: network.name,
         executor: minter.address
     })
-
-
-  // We mint a single NFT to alice, and pass the proper values
-
-//   const mintTx = await hoprBoost
-//     .connect(minter)
-//     .batchMint(
-//         DIAMONDS[0],
-//       TYPE,
-//       rank,
-//       BOOST[rank],
-//       DEADLINE
-//     );
-
-//   await mintTx.wait()
 
 const currentNonce = await minter.getTransactionCount();
 console.log("nonce", currentNonce);
