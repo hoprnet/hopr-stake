@@ -1,6 +1,33 @@
 # hopr-stake
 Smart contract for staking incentives with NFTs
 
+## Installation
+```
+nvm use 16
+yarn install
+```
+## Batch-mint NFTs
+1. Download the result of NFT recipients from DuneAnalytics to `json/export.csv`. An sample query is at https://dune.xyz/queries/140878. Note that column `eoa` and `grade` are mandatory and entries of `eoa` should start with `0x`.
+2. Change parameters in `tasks/batchMint.ts`:
+```ts
+const deadline = 1642424400; // Jan 17th 2022, 14:00
+const type = "Wildhorn_v1";
+// Diamond: 5% Gold: 3% Silver: 2% Bronze: 1%
+const boost = {
+    "diamond": rate(5),
+    "gold": rate(3),
+    "silver": rate(2),
+    "bronze": rate(1)
+};
+```
+4. Save the minter's private key and quicknode'a API key in `.env` file
+```
+MINTER_KEY=0x123...xyz
+QUIKNODE_KEY=abc...789
+``` 
+5. HOPR Association MS grant minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
+6. run `yarn batchmint`
+7, HOPR Association MS revoke minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
 ## Technical Specification
 This incentive program will take place on the xDAI chain - Locking xHOPR to receive wxHOPR rewards.  
 Two smart contracts are introduced for this incentive program:

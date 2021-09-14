@@ -17,11 +17,7 @@
     "deploy:goerli": "yarn deploy --network goerli",
     "deploy:xdai": "yarn deploy --network xdai",
     "coverage": "hardhat coverage --network hardhat",
-    "batchmint": "hardhat batchMint --network xdai",
-    "batchmint:diamond": "hardhat batchMint --network xdai --rank diamond",
-    "batchmint:gold": "hardhat batchMint --network xdai --rank gold",
-    "batchmint:silver": "hardhat batchMint --network xdai --rank silver",
-    "batchmint:bronze": "hardhat batchMint --network xdai --rank bronze"
+    "batchmint": "hardhat batchMint --network xdai"
   },
   "files": [
     "lib",
@@ -58,5 +54,8 @@
   "engines": {
     "node": "16",
     "yarn": "1"
+  },
+  "dependencies": {
+    "csv-parse": "^4.16.3"
   }
 }

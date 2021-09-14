@@ -28,3 +28,5 @@ export const BADGES = [
     nominator: "317", // 1% APY
   },
 ];
+
+export const BOOST_CONTRACT_XDAI_PROD = '0x43d13D7B83607F14335cF2cB75E87dA369D056c7';

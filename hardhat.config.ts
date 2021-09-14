@@ -72,7 +72,7 @@ task('mint', "Mints a demo NFT to a specific account", async (...args: any[]) =>
 task('batchMint', "Mints a demo NFT to a specific account", async (...args: any[]) => {
   return (await import('./tasks/batchMint')).default(args[0], args[1], args[2])
 })
-.addParam<string>('rank', 'NFT rank')
+.addOptionalParam<string>('path', 'Path to the DuneAnalytics export in csv')
 
 
 task('updateBaseURI', "Updates the base URI of all the NFTs in the smart contract", async (...args: any[]) => {
