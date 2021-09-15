@@ -16,7 +16,8 @@
     "deploy:localhost": "yarn deploy",
     "deploy:goerli": "yarn deploy --network goerli",
     "deploy:xdai": "yarn deploy --network xdai",
-    "coverage": "hardhat coverage --network hardhat"
+    "coverage": "hardhat coverage --network hardhat",
+    "batchmint": "hardhat batchMint --network xdai"
   },
   "files": [
     "lib",
@@ -53,5 +54,8 @@
   "engines": {
     "node": "16",
     "yarn": "1"
+  },
+  "dependencies": {
+    "csv-parse": "^4.16.3"
   }
 }
