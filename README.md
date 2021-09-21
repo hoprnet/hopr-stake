@@ -27,7 +27,7 @@ QUIKNODE_KEY=abc...789
 ``` 
 5. HOPR Association MS grant minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
 6. run `yarn batchmint`
-7, HOPR Association MS revoke minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
+7. HOPR Association MS revoke minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
 ## Technical Specification
 This incentive program will take place on the xDAI chain - Locking xHOPR to receive wxHOPR rewards.  
 Two smart contracts are introduced for this incentive program:

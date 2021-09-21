@@ -5,7 +5,7 @@ import type { HardhatRuntimeEnvironment, RunSuperFunction } from 'hardhat/types'
 import { HoprBoost } from "../lib/types/HoprBoost"
 import { BOOST_CONTRACT_XDAI_PROD } from '../utils/constants';
 import { apy, GAS_ESTIMATION_PER_BATCH, GAS_PRICE, MAX_BATCH_MINT_FOR, parseCsv, rate, splitArray } from '../utils/mint';
-import { ContractTransaction, utils } from 'ethers';
+import { utils } from 'ethers';
 
 const CSV_PATH = `${process.cwd()}/json/export.csv`;    // export from DuneAnalytics
 
@@ -50,7 +50,8 @@ async function main(
     const hoprBoost = await HoprBoost.attach(BOOST_CONTRACT_XDAI_PROD) as HoprBoost;
     console.log('Running task "mintTokens" with config:', {
         network: network.name,
-        executor: minter.address
+        executor: minter.address,
+        hoprBoost: hoprBoost.address
     })
 
     const currentNonce = await minter.getTransactionCount();
@@ -70,11 +71,12 @@ async function main(
 
     try {
         // build batch functions
-        const mintTxs = Object.keys(results).map((boostRank: string, rankIndex: number) => {
-            const startNonce = currentNonce + rankStartNonce[rankIndex];
+        let startNonce = currentNonce
+        for await (const boostRank of Object.keys(results)) {
             const recipients = results[boostRank];
             const groupedRecipients = splitArray(recipients, MAX_BATCH_MINT_FOR);
-            return groupedRecipients.map((batch: string[], batchIndex: number) => {
+            const mintTxPromises = groupedRecipients.map((batch: string[], batchIndex: number) => {
+                console.log(`Sending minting tx for rank ${boostRank} Nr. ${batchIndex} at nonce ${startNonce + batchIndex}.`)
                 return hoprBoost.connect(minter).batchMint(
                     batch,
                     type,
@@ -87,14 +89,12 @@ async function main(
                     }
                 )
             })
-        });
-    
-        const flatMintTxs = await Promise.all(mintTxs.flat()) as ContractTransaction[];
-    
-        await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
-    
-        // We log the transaction hash and verify the NFTs from the contract
-        console.log(`NFTs minted NFT in the ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
+            startNonce += mintTxPromises.length;
+            const mintTxs = await Promise.all(mintTxPromises);
+            const mintTxReceipts = await Promise.all(mintTxs.map(mintTx => mintTx.wait()));
+            // We log the transaction hash and verify the NFTs from the contract
+            console.log(`${boostRank} NFTs are minted NFT in the ${JSON.stringify(mintTxReceipts.map(receipt => receipt.blockHash), null, 2)} transaction`);
+        }
     } catch (error) {
         console.error(error)
     }
