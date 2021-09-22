@@ -9,7 +9,7 @@ import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
 import "solidity-coverage";
-const { MINTER_KEY, QUIKNODE_KEY } = process.env;
+const { MINTER_KEY, QUIKNODE_KEY, ADMIN_ACCOUNT } = process.env;
 
 const { ETHERSCAN } = process.env;
 
@@ -24,7 +24,14 @@ const hardhatConfig: HardhatUserConfig = {
       chainId: 100,
       url: `https://still-patient-forest.xdai.quiknode.pro/${QUIKNODE_KEY}/`,
       accounts: MINTER_KEY
-        ? [MINTER_KEY]
+        ? [MINTER_KEY, MINTER_KEY]
+        : [],
+    },
+    goerli: {
+      chainId: 5,
+      url: `https://goerli.infura.io/v3/de898745bd39430f9cf6e359b911257a`,
+      accounts: ADMIN_ACCOUNT
+        ? [ADMIN_ACCOUNT, ADMIN_ACCOUNT]
         : [],
     },
   },

@@ -10,12 +10,10 @@ import { utils } from 'ethers';
 const CSV_PATH = `${process.cwd()}/json/export.csv`;    // export from DuneAnalytics
 
 const deadline = 1642424400; // Jan 17th 2022, 14:00
-const type = "Wildhorn_v1";
+const type = "PuzzleHunt_v1";
 // Diamond: 5% Gold: 3% Silver: 2% Bronze: 1%
 const boost = {
-    "diamond": rate(5),
-    "gold": rate(3),
-    "silver": rate(2),
+    "gold": rate(4),
     "bronze": rate(1)
 };
 

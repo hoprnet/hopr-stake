@@ -29,4 +29,19 @@ export const BADGES = [
   },
 ];
 
+export const PUZZLE_BADGE = {
+  'gold': {
+    type: "PuzzleHunt_v1",
+    rank: "gold",
+    deadline: PROGRAM_END,
+    nominator: `${317 * 4}`, // 1% APY
+  },
+  'bronze': {
+    type: "PuzzleHunt_v1",
+    rank: "bronze",
+    deadline: PROGRAM_END,
+    nominator: '317', // 1% APY
+  },
+}
+
 export const BOOST_CONTRACT_XDAI_PROD = '0x43d13D7B83607F14335cF2cB75E87dA369D056c7';
