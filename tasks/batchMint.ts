@@ -10,7 +10,7 @@ import { utils } from 'ethers';
 const CSV_PATH = `${process.cwd()}/json/export.csv`;    // export from DuneAnalytics
 
 const deadline = 1642424400; // Jan 17th 2022, 14:00
-const type = "Wildhorn_v1";
+const type = "Wildhorn_v1"; // 
 // Diamond: 5% Gold: 3% Silver: 2% Bronze: 1%
 const boost = {
     "diamond": rate(5),
@@ -75,9 +75,10 @@ async function main(
         for await (const boostRank of Object.keys(results)) {
             const recipients = results[boostRank];
             const groupedRecipients = splitArray(recipients, MAX_BATCH_MINT_FOR);
-            const mintTxPromises = groupedRecipients.map((batch: string[], batchIndex: number) => {
+            let mintTxs = [];
+            groupedRecipients.forEach(async (batch: string[], batchIndex: number) => {
                 console.log(`Sending minting tx for rank ${boostRank} Nr. ${batchIndex} at nonce ${startNonce + batchIndex}.`)
-                return hoprBoost.connect(minter).batchMint(
+                const mintTx = await hoprBoost.connect(minter).batchMint(
                     batch,
                     type,
                     boostRank,
@@ -88,9 +89,9 @@ async function main(
                         gasPrice: GAS_PRICE
                     }
                 )
+                mintTxs.push(mintTx);
             })
-            startNonce += mintTxPromises.length;
-            const mintTxs = await Promise.all(mintTxPromises);
+            startNonce += mintTxs.length;
             const mintTxReceipts = await Promise.all(mintTxs.map(mintTx => mintTx.wait()));
             // We log the transaction hash and verify the NFTs from the contract
             console.log(`${boostRank} NFTs are minted NFT in the ${JSON.stringify(mintTxReceipts.map(receipt => receipt.blockHash), null, 2)} transaction`);
