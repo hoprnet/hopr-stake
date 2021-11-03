@@ -1,6 +1,7 @@
 
 import parse from 'csv-parse'
 import {createReadStream} from 'fs'
+import { utils } from 'ethers'
 
 type DuneExportType = {
     eoa: string,
@@ -8,7 +9,7 @@ type DuneExportType = {
 }
 export const MAX_BATCH_MINT_FOR = 50; // can pass max. 50 addresses for batch mint
 export const GAS_ESTIMATION_PER_BATCH = 10500000;
-export const GAS_PRICE = 5;
+export const GAS_PRICE = Number(utils.parseUnits('1', 'gwei'));
 
 export const parseCsv = async (path: string): Promise<Record<string, string[]>> => {
     const records: Record<string, string[]> = {};
