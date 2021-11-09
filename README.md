@@ -11,8 +11,14 @@ This script allows the HoprBoost minter to mint Boost NFTs of **one** "type" and
 
 0. HOPR Association MS grant minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
 
-1. Download the result of NFT recipients from DuneAnalytics to `json/export.csv`. An sample query is at https://dune.xyz/queries/140878. Note that column `eoa` and `grade` are mandatory and entries of `eoa` should start with `0x`.
-2. Change parameters in `tasks/batchMint.ts`:
+1. Download the result of NFT recipients from DuneAnalytics to `json/export.csv`. An sample query is at https://dune.xyz/queries/140878. Note that 
+    
+    - Column `eoa` and `grade` are mandatory
+    - Addresses in the column `eoa` should start with `0x` and wrapped by `>` and `<`. The followings are valid examples of an `eoa` entry: 
+        - `"<a href=""https://blockscout.com/xdai/mainnet/address/0xf69c45b4246fd91f17ab9851987c7f100e0273cf"" target=""_blank"">0xf69c45b4246fd91f17ab9851987c7f100e0273cf</a>"` 
+        - `>0xea674fdde714fd979de3edf0f56aa9716b898ec8<`
+
+2. Change parameters in `tasks/batchMint.ts` based on the "Request to mint NFT":
 ```ts
 const deadline = 1642424400; // Jan 17th 2022, 14:00
 const type = "Wildhorn_v1";
