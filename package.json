@@ -17,7 +17,7 @@
     "deploy:goerli": "yarn deploy --network goerli",
     "deploy:xdai": "yarn deploy --network xdai",
     "coverage": "hardhat coverage --network hardhat",
-    "batchmint": "hardhat batchMint --network xdai"
+    "batchmint": "hardhat batchMint --log true --network xdai"
   },
   "files": [
     "lib",

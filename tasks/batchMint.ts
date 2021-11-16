@@ -24,7 +24,7 @@ const boost = {
  * E.g. export https://dune.xyz/queries/140878/278035
  */
 async function main(
-    { path }: { path?: string },
+    { log, path }: { log?: boolean, path?: string },
   { ethers, network}: HardhatRuntimeEnvironment,
   _runSuper: RunSuperFunction<any>
 ) {
@@ -34,6 +34,8 @@ async function main(
 
     // parse export from DuneAnalytics
     const csvPath = path ?? CSV_PATH;
+    const logData = log ?? true;
+    console.log('logData', logData)
     const results = await parseCsv(csvPath);
 
     // each rank has a boost
@@ -46,7 +48,7 @@ async function main(
 
     // boost contract
     const hoprBoost = await ethers.getContractAt("HoprBoost", BOOST_CONTRACT_XDAI_PROD, minter);
-    console.log('Running task "mintTokens" with config:', {
+    console.log('\nRunning task "mintTokens" with config:', {
         network: network.name,
         executor: minter.address,
         hoprBoost: hoprBoost.address
@@ -65,7 +67,7 @@ async function main(
                             .mul(BigNumber.from(GAS_PRICE)).toString();
     const minterBalance = await minter.getBalance();
     assert(minterBalance.gte(estimatedGas), `Not enough balance for gas. Please get at least ${utils.formatEther(estimatedGas)}`)
-    console.log(`There will be ${numTx} transactions.`);
+    console.log(`\nThere will be ${numTx} transactions.`);
 
     try {
         // build batch functions
@@ -74,6 +76,17 @@ async function main(
             const recipients = results[boostRank];
             const groupedRecipients = splitArray(recipients, MAX_BATCH_MINT_FOR);
             return groupedRecipients.map((batch: string[], batchIndex: number) => {
+                if (logData === true) {
+                    // encode function data
+                    console.log('\n   >> Transaction Nr.%d, data payload:', startNonce + batchIndex)
+                    console.log(hoprBoost.interface.encodeFunctionData("batchMint", [
+                        batch,
+                        type,
+                        boostRank,
+                        boost[boostRank],
+                        deadline
+                    ]))
+                }
                 return hoprBoost.connect(minter).batchMint(
                     batch,
                     type,
@@ -93,7 +106,7 @@ async function main(
         await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
 
         // We log the transaction hash and verify the NFTs from the contract
-        console.log(`NFTs minted NFT in the ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
+        console.log(`\nNFTs minted NFT in the ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
     } catch (error) {
         console.error(error)
     }
