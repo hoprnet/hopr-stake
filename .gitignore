@@ -47,7 +47,6 @@ amb-erc20-to-erc677.config
 
 # Logs
 logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
