@@ -7,8 +7,18 @@ nvm use 16
 yarn install
 ```
 ## Batch-mint NFTs
-1. Download the result of NFT recipients from DuneAnalytics to `json/export.csv`. An sample query is at https://dune.xyz/queries/140878. Note that column `eoa` and `grade` are mandatory and entries of `eoa` should start with `0x`.
-2. Change parameters in `tasks/batchMint.ts`:
+This script allows the HoprBoost minter to mint Boost NFTs of **one** "type" and one/multiple "rank" with their respective APYs. If the minter wants to mint Boost NFTs of **multiple** "types", steps 1-5 need to be repeated for each "type".
+
+0. HOPR Association MS grant minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
+
+1. Download the result of NFT recipients from DuneAnalytics to `json/export.csv`. An sample query is at https://dune.xyz/queries/140878. Note that 
+    
+    - Column `eoa` and `grade` are mandatory
+    - Addresses in the column `eoa` should start with `0x` and wrapped by `>` and `<`. The followings are valid examples of an `eoa` entry: 
+        - `"<a href=""https://blockscout.com/xdai/mainnet/address/0xf69c45b4246fd91f17ab9851987c7f100e0273cf"" target=""_blank"">0xf69c45b4246fd91f17ab9851987c7f100e0273cf</a>"` 
+        - `>0xea674fdde714fd979de3edf0f56aa9716b898ec8<`
+
+2. Change parameters in `tasks/batchMint.ts` based on the "Request to mint NFT":
 ```ts
 const deadline = 1642424400; // Jan 17th 2022, 14:00
 const type = "Wildhorn_v1";
@@ -20,14 +30,24 @@ const boost = {
     "bronze": rate(1)
 };
 ```
+Each NFT has a `deadline`, before which the boost can be redeemed in the staking contract.
+`type` is a case-sensitive string that groups HoprBoost NFTs. Only one boost per type can be taken into account in the staking contract.
+`boost` object contains key-value pairs, where the key is the "rank" of the Boost NFT and the value is the APY. E.g. `rate(5)` gives the boost factor for a 5% APY.
+
 4. Save the minter's private key and quicknode'a API key in `.env` file
 ```
 MINTER_KEY=0x123...xyz
 QUIKNODE_KEY=abc...789
 ``` 
-5. HOPR Association MS grant minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
-6. run `yarn batchmint`
-7, HOPR Association MS revoke minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
+
+5. run 
+    ```
+    yarn batchmint
+    ```
+6. Minter renounces its `MINTER_ROLE` or let the HOPR Association MS revoke minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract).
+To renounce its `MINTER_ROLE`, 
+    - Go to [Boost contract on blockscout explorer](https://blockscout.com/xdai/mainnet/address/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/write-contract) and connect to MetaMask.
+    - Insert "`0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6`" and `<your account address>` into fields "7. renounceRole" → "role(bytes32)" and "account(address)" respectively and click "Write".
 ## Technical Specification
 This incentive program will take place on the xDAI chain - Locking xHOPR to receive wxHOPR rewards.  
 Two smart contracts are introduced for this incentive program:

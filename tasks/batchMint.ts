@@ -2,7 +2,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { assert } from 'console';
 import type { HardhatRuntimeEnvironment, RunSuperFunction } from 'hardhat/types'
-import { HoprBoost } from "../lib/types/HoprBoost"
 import { BOOST_CONTRACT_XDAI_PROD } from '../utils/constants';
 import { apy, GAS_ESTIMATION_PER_BATCH, GAS_PRICE, MAX_BATCH_MINT_FOR, parseCsv, rate, splitArray } from '../utils/mint';
 import { ContractTransaction, utils } from 'ethers';
@@ -10,13 +9,13 @@ import { ContractTransaction, utils } from 'ethers';
 const CSV_PATH = `${process.cwd()}/json/export.csv`;    // export from DuneAnalytics
 
 const deadline = 1642424400; // Jan 17th 2022, 14:00
-const type = "Wildhorn_v1";
-// Diamond: 5% Gold: 3% Silver: 2% Bronze: 1%
+const type = "Wildhorn_v2";
+// Diamond: 7.5% Gold: 6% Silver: 4.5% Bronze: 3%
 const boost = {
-    "diamond": rate(5),
-    "gold": rate(3),
-    "silver": rate(2),
-    "bronze": rate(1)
+    "diamond": rate(7.5),
+    "gold": rate(6),
+    "silver": rate(4.5),
+    "bronze": rate(3)
 };
 
 /**
@@ -25,7 +24,7 @@ const boost = {
  * E.g. export https://dune.xyz/queries/140878/278035
  */
 async function main(
-    { path }: { path?: string },
+    { log, path }: { log?: boolean, path?: string },
   { ethers, network}: HardhatRuntimeEnvironment,
   _runSuper: RunSuperFunction<any>
 ) {
@@ -35,6 +34,8 @@ async function main(
 
     // parse export from DuneAnalytics
     const csvPath = path ?? CSV_PATH;
+    const logData = log ?? true;
+    console.log('logData', logData)
     const results = await parseCsv(csvPath);
 
     // each rank has a boost
@@ -46,11 +47,11 @@ async function main(
     console.table(overview);
 
     // boost contract
-    const HoprBoost = await ethers.getContractFactory("HoprBoost");
-    const hoprBoost = await HoprBoost.attach(BOOST_CONTRACT_XDAI_PROD) as HoprBoost;
-    console.log('Running task "mintTokens" with config:', {
+    const hoprBoost = await ethers.getContractAt("HoprBoost", BOOST_CONTRACT_XDAI_PROD, minter);
+    console.log('\nRunning task "mintTokens" with config:', {
         network: network.name,
-        executor: minter.address
+        executor: minter.address,
+        hoprBoost: hoprBoost.address
     })
 
     const currentNonce = await minter.getTransactionCount();
@@ -61,12 +62,12 @@ async function main(
     const numTx = rankStartNonce.pop();
 
     // compare native balance with estimated cost
-    const estimatedGas = utils.parseUnits(BigNumber.from(GAS_ESTIMATION_PER_BATCH)
+    const estimatedGas = BigNumber.from(GAS_ESTIMATION_PER_BATCH)
                             .mul(BigNumber.from(numTx))
-                            .mul(BigNumber.from(GAS_PRICE)).toString(), 'gwei');
+                            .mul(BigNumber.from(GAS_PRICE)).toString();
     const minterBalance = await minter.getBalance();
     assert(minterBalance.gte(estimatedGas), `Not enough balance for gas. Please get at least ${utils.formatEther(estimatedGas)}`)
-    console.log(`There will be ${numTx} transactions.`);
+    console.log(`\nThere will be ${numTx} transactions.`);
 
     try {
         // build batch functions
@@ -75,6 +76,17 @@ async function main(
             const recipients = results[boostRank];
             const groupedRecipients = splitArray(recipients, MAX_BATCH_MINT_FOR);
             return groupedRecipients.map((batch: string[], batchIndex: number) => {
+                if (logData === true) {
+                    // encode function data
+                    console.log('\n   >> Transaction Nr.%d, data payload:', startNonce + batchIndex)
+                    console.log(hoprBoost.interface.encodeFunctionData("batchMint", [
+                        batch,
+                        type,
+                        boostRank,
+                        boost[boostRank],
+                        deadline
+                    ]))
+                }
                 return hoprBoost.connect(minter).batchMint(
                     batch,
                     type,
@@ -88,13 +100,13 @@ async function main(
                 )
             })
         });
-    
+
         const flatMintTxs = await Promise.all(mintTxs.flat()) as ContractTransaction[];
-    
+
         await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
-    
+
         // We log the transaction hash and verify the NFTs from the contract
-        console.log(`NFTs minted NFT in the ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
+        console.log(`\nNFTs minted NFT in the ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
     } catch (error) {
         console.error(error)
     }

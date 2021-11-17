@@ -1,6 +1,7 @@
 
 import parse from 'csv-parse'
 import {createReadStream} from 'fs'
+import { utils } from 'ethers'
 
 type DuneExportType = {
     eoa: string,
@@ -8,7 +9,7 @@ type DuneExportType = {
 }
 export const MAX_BATCH_MINT_FOR = 50; // can pass max. 50 addresses for batch mint
 export const GAS_ESTIMATION_PER_BATCH = 10500000;
-export const GAS_PRICE = 5;
+export const GAS_PRICE = Number(utils.parseUnits('1', 'gwei'));
 
 export const parseCsv = async (path: string): Promise<Record<string, string[]>> => {
     const records: Record<string, string[]> = {};
@@ -16,15 +17,26 @@ export const parseCsv = async (path: string): Promise<Record<string, string[]>> 
         delimiter: ',',
         columns: true
     }));
+    const errorRecord: Record<string, string[]> = {};
     for await (const record of parser) {
         const {eoa, grade} = record as Required<DuneExportType>;
         if (!Object.keys(records).find(key => key === grade)) {
             records[grade] = [];
         }
         // Work with each record
-        records[grade].push(
-            eoa.match(/(?<=\>).*(?=\<)/g).join('')
-        )
+        try {
+            const extractedAddress = utils.getAddress(eoa.match(/(?<=\>)0x.{40}(?=\<)/g).join(''))
+            records[grade].push(extractedAddress)
+        } catch (error) {
+            if (!Object.keys(errorRecord).find(key => key === grade)) {
+                errorRecord[grade] = [];
+            }
+            errorRecord[grade].push(eoa)
+        }
+    }
+    if (Object.keys(errorRecord).length > 0) {
+        console.error("error!!!")
+        console.error(JSON.stringify(errorRecord, null, 2))
     }
     return records
 };
