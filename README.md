@@ -14,6 +14,7 @@ This script allows the HoprBoost minter to mint Boost NFTs of **one** "type" and
 
 1. Download the result of NFT recipients from DuneAnalytics to `inputs` folder and name it after the NFT's type name, e.g. `DAO_v2.csv`. An sample query is at https://dune.xyz/queries/140878. Note that 
     
+    - You need to be logged in Dune with our company account to be able to download the entries. Please request access in case you don't have it.
     - Name of the csv is case-sensitive. Only one boost per type can be taken into account in the staking contract.
     - Column `eoa` and `grade` are mandatory
     - Addresses in the column `eoa` should start with `0x` and wrapped by `>` and `<`. The followings are valid examples of an `eoa` entry: 
