@@ -1,0 +1,22 @@
+$ hardhat batchMint --log true --type $NAME --network hardhat
+log true
+csvPath /workspace/hopr-stake/inputs/Demo.csv
+
+Need to mint NFTs:
+┌─────────┬───────────┬─────┬───────┐
+│ (index) │   rank    │ apy │ count │
+├─────────┼───────────┼─────┼───────┤
+│    0    │ 'diamond' │ NaN │   1   │
+└─────────┴───────────┴─────┴───────┘
+
+Running task "mintTokens" with config: {
+  network: 'hardhat',
+  executor: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  hoprBoost: '0x43d13D7B83607F14335cF2cB75E87dA369D056c7'
+}
+
+Current network price { average: 1.22, fast: 2, slow: 1.22 }
+
+There will be 1 transactions.
+
+   >> Transaction Nr.0, data payload:

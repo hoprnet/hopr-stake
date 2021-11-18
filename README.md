@@ -35,6 +35,8 @@ const boost = {
 Each NFT has a `deadline`, before which the boost can be redeemed in the staking contract.
 `boost` object contains key-value pairs, where the key is the "rank" of the Boost NFT and the value is the APY. E.g. `rate(5)` gives the boost factor for a 5% APY. Note that the key is also case-sensitive. It should be the same as entries of the `grade` column of the input csv.
 
+**Important note: In most cases you only need to change the value inside `rate($value)`. Unless needed, do not change neither the `deadline` nor the bost key attributes (i.e. `diamond`, `gold`, `silver`, `bronze`).**
+
 4. Save the minter's private key in the `.env` file
 ```
 MINTER_KEY=0x123...xyz
