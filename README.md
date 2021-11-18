@@ -21,7 +21,7 @@ This script allows the HoprBoost minter to mint Boost NFTs of **one** "type" and
         - `"<a href=""https://blockscout.com/xdai/mainnet/address/0xf69c45b4246fd91f17ab9851987c7f100e0273cf"" target=""_blank"">0xf69c45b4246fd91f17ab9851987c7f100e0273cf</a>"` 
         - `>0xea674fdde714fd979de3edf0f56aa9716b898ec8<`
 
-2. Change parameters in `tasks/batchMint.ts` based on the "Request to mint NFT":
+2. Change parameters in [`tasks/batchMint.ts`](./tasks/batchMint.ts#L12) based on the "Request to mint NFT":
 ```ts
 const deadline = 1642424400; // Jan 17th 2022, 14:
 // Diamond: 5% Gold: 3% Silver: 2% Bronze: 1%
