@@ -1,7 +1,8 @@
 
-import parse from 'csv-parse'
+import parse, { Parser } from 'csv-parse'
 import {createReadStream} from 'fs'
 import { utils } from 'ethers'
+import axios from 'axios'
 
 type DuneExportType = {
     eoa: string,
@@ -9,14 +10,32 @@ type DuneExportType = {
 }
 export const MAX_BATCH_MINT_FOR = 50; // can pass max. 50 addresses for batch mint
 export const GAS_ESTIMATION_PER_BATCH = 10500000;
-export const GAS_PRICE = Number(utils.parseUnits('1', 'gwei'));
+export const SAFE_GAS_PRICE = 2;
+
+export const getGasPrice = async () => {
+    let price: number;
+    try {
+        const gasObj = await axios.get('https://blockscout.com/xdai/mainnet/api/v1/gas-price-oracle');
+        console.log("\nCurrent network price", gasObj.data);
+        price = gasObj.status === 200 ? gasObj.data.fast : SAFE_GAS_PRICE
+    } catch (error) {
+        price = SAFE_GAS_PRICE
+    }
+    return Number(utils.parseUnits(price.toString(), 'gwei'));
+}
 
 export const parseCsv = async (path: string): Promise<Record<string, string[]>> => {
     const records: Record<string, string[]> = {};
-    const parser = createReadStream(path).pipe(parse({
-        delimiter: ',',
-        columns: true
-    }));
+    let parser: Parser;
+    try {
+        parser = createReadStream(path).pipe(parse({
+            delimiter: ',',
+            columns: true
+        }));
+    } catch (error) {
+        console.error(error)
+        throw error
+    }
     const errorRecord: Record<string, string[]> = {};
     for await (const record of parser) {
         const {eoa, grade} = record as Required<DuneExportType>;

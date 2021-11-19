@@ -17,7 +17,10 @@
     "deploy:goerli": "yarn deploy --network goerli",
     "deploy:xdai": "yarn deploy --network xdai",
     "coverage": "hardhat coverage --network hardhat",
-    "batchmint": "hardhat batchMint --log true --network xdai"
+    "batchmint:local": "hardhat batchMint --log true --type $NAME --network hardhat",
+    "batchmint:xdai": "hardhat batchMint --log true --type $NAME --network xdai",
+    "batchmint:local:save-log": "yarn batchmint:local | tee outputs/$NAME.log",
+    "batchmint:xdai:save-log": "yarn batchmint:xdai | tee outputs/$NAME.log"
   },
   "files": [
     "lib",
@@ -56,6 +59,7 @@
     "yarn": "1"
   },
   "dependencies": {
+    "axios": "^0.24.0",
     "csv-parse": "^4.16.3"
   }
 }

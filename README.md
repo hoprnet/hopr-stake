@@ -5,23 +5,25 @@ Smart contract for staking incentives with NFTs
 ```
 nvm use 16
 yarn install
+yarn build
 ```
 ## Batch-mint NFTs
 This script allows the HoprBoost minter to mint Boost NFTs of **one** "type" and one/multiple "rank" with their respective APYs. If the minter wants to mint Boost NFTs of **multiple** "types", steps 1-5 need to be repeated for each "type".
 
 0. HOPR Association MS grant minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract)
 
-1. Download the result of NFT recipients from DuneAnalytics to `json/export.csv`. An sample query is at https://dune.xyz/queries/140878. Note that 
+1. Download the result of NFT recipients from DuneAnalytics to `inputs` folder and name it after the NFT's type name, e.g. `DAO_v2.csv`. An sample query is at https://dune.xyz/queries/140878. Note that 
     
+    - You need to be logged in Dune with our company account to be able to download the entries. Please request access in case you don't have it.
+    - Name of the csv is case-sensitive. Only one boost per type can be taken into account in the staking contract.
     - Column `eoa` and `grade` are mandatory
     - Addresses in the column `eoa` should start with `0x` and wrapped by `>` and `<`. The followings are valid examples of an `eoa` entry: 
         - `"<a href=""https://blockscout.com/xdai/mainnet/address/0xf69c45b4246fd91f17ab9851987c7f100e0273cf"" target=""_blank"">0xf69c45b4246fd91f17ab9851987c7f100e0273cf</a>"` 
         - `>0xea674fdde714fd979de3edf0f56aa9716b898ec8<`
 
-2. Change parameters in `tasks/batchMint.ts` based on the "Request to mint NFT":
+2. Change parameters in [`tasks/batchMint.ts`](./tasks/batchMint.ts#L12) based on the "Request to mint NFT":
 ```ts
-const deadline = 1642424400; // Jan 17th 2022, 14:00
-const type = "Wildhorn_v1";
+const deadline = 1642424400; // Jan 17th 2022, 14:
 // Diamond: 5% Gold: 3% Silver: 2% Bronze: 1%
 const boost = {
     "diamond": rate(5),
@@ -31,19 +33,48 @@ const boost = {
 };
 ```
 Each NFT has a `deadline`, before which the boost can be redeemed in the staking contract.
-`type` is a case-sensitive string that groups HoprBoost NFTs. Only one boost per type can be taken into account in the staking contract.
-`boost` object contains key-value pairs, where the key is the "rank" of the Boost NFT and the value is the APY. E.g. `rate(5)` gives the boost factor for a 5% APY.
+`boost` object contains key-value pairs, where the key is the "rank" of the Boost NFT and the value is the APY. E.g. `rate(5)` gives the boost factor for a 5% APY. Note that the key is also case-sensitive. It should be the same as entries of the `grade` column of the input csv.
 
-4. Save the minter's private key and quicknode'a API key in `.env` file
+**Important note: In most cases you only need to change the value inside `rate($value)`. Unless needed, do not change neither the `deadline` nor the bost key attributes (i.e. `diamond`, `gold`, `silver`, `bronze`). If during log the `apy` shows `NaN` you likely have an error and need to ensure the `*.csv` `grade` column matches [`tasks/batchMint.ts`](./tasks/batchMint.ts#L12) `boost` key-value map.**
+
+4. Save the minter's private key in the `.env` file
 ```
 MINTER_KEY=0x123...xyz
-QUIKNODE_KEY=abc...789
 ``` 
-
-5. run 
-    ```
-    yarn batchmint
-    ```
+5. Test locally with
+If you want to save the output log under `outputs` folder, run
+```
+NAME="<replace this with type name>" yarn batchmint:local:save-log
+```
+e.g.
+```
+NAME="DAO_v2" yarn batchmint:local:save-log
+```
+If you don't want or have trouble saving the output file, run
+```
+NAME="<replace this with type name>" yarn batchmint:local
+```
+e.g.
+```
+NAME="DAO_v2" yarn batchmint:local
+```
+5. Mint in production, run 
+If you want to save the output log under `outputs` folder, run
+```
+NAME="<replace this with type name>" yarn batchmint:xdai:save-log
+```
+e.g.
+```
+NAME="DAO_v2" yarn batchmint:xdai:save-log
+```
+If you don't want or have trouble saving the output file, run
+```
+NAME="<replace this with type name>" yarn batchmint:xdai
+```
+e.g.
+```
+NAME="DAO_v2" yarn batchmint:xdai
+```
 6. Minter renounces its `MINTER_ROLE` or let the HOPR Association MS revoke minter's account `MINTER_ROLE` on [`HoprBoost` smart contract](https://blockscout.com/xdai/mainnet/tokens/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/read-contract).
 To renounce its `MINTER_ROLE`, 
     - Go to [Boost contract on blockscout explorer](https://blockscout.com/xdai/mainnet/address/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/write-contract) and connect to MetaMask.

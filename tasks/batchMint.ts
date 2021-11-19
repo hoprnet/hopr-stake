@@ -3,19 +3,17 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { assert } from 'console';
 import type { HardhatRuntimeEnvironment, RunSuperFunction } from 'hardhat/types'
 import { BOOST_CONTRACT_XDAI_PROD } from '../utils/constants';
-import { apy, GAS_ESTIMATION_PER_BATCH, GAS_PRICE, MAX_BATCH_MINT_FOR, parseCsv, rate, splitArray } from '../utils/mint';
+import { apy, GAS_ESTIMATION_PER_BATCH, getGasPrice, MAX_BATCH_MINT_FOR, parseCsv, rate, splitArray } from '../utils/mint';
 import { ContractTransaction, utils } from 'ethers';
 
-const CSV_PATH = `${process.cwd()}/json/export.csv`;    // export from DuneAnalytics
+const INPUT_PATH = `${process.cwd()}/inputs/`;    // location where rawdata gets stored
 
 const deadline = 1642424400; // Jan 17th 2022, 14:00
-const type = "Wildhorn_v2";
-// Diamond: 7.5% Gold: 6% Silver: 4.5% Bronze: 3%
 const boost = {
-    "diamond": rate(7.5),
-    "gold": rate(6),
-    "silver": rate(4.5),
-    "bronze": rate(3)
+    "diamond": rate(10),
+    "gold": rate(7.5),
+    "silver": rate(6),
+    "bronze": rate(4.5)
 };
 
 /**
@@ -24,7 +22,7 @@ const boost = {
  * E.g. export https://dune.xyz/queries/140878/278035
  */
 async function main(
-    { log, path }: { log?: boolean, path?: string },
+    { log, type }: { log: boolean, type: string },
   { ethers, network}: HardhatRuntimeEnvironment,
   _runSuper: RunSuperFunction<any>
 ) {
@@ -32,10 +30,10 @@ async function main(
     const signers = await ethers.getSigners();
     const minter = signers[0];
 
-    // parse export from DuneAnalytics
-    const csvPath = path ?? CSV_PATH;
-    const logData = log ?? true;
-    console.log('logData', logData)
+    // parse inputs
+    const csvPath = INPUT_PATH+type+'.csv';
+    console.log('log', log)
+    console.log('csvPath', csvPath)
     const results = await parseCsv(csvPath);
 
     // each rank has a boost
@@ -60,11 +58,12 @@ async function main(
         return acc.concat(i === 0 ? l : acc[i] + l)
     }, [0]);
     const numTx = rankStartNonce.pop();
-
+    
     // compare native balance with estimated cost
+    const gasPrice = await getGasPrice();
     const estimatedGas = BigNumber.from(GAS_ESTIMATION_PER_BATCH)
                             .mul(BigNumber.from(numTx))
-                            .mul(BigNumber.from(GAS_PRICE)).toString();
+                            .mul(BigNumber.from(gasPrice)).toString();
     const minterBalance = await minter.getBalance();
     assert(minterBalance.gte(estimatedGas), `Not enough balance for gas. Please get at least ${utils.formatEther(estimatedGas)}`)
     console.log(`\nThere will be ${numTx} transactions.`);
@@ -76,7 +75,7 @@ async function main(
             const recipients = results[boostRank];
             const groupedRecipients = splitArray(recipients, MAX_BATCH_MINT_FOR);
             return groupedRecipients.map((batch: string[], batchIndex: number) => {
-                if (logData === true) {
+                if (log) {
                     // encode function data
                     console.log('\n   >> Transaction Nr.%d, data payload:', startNonce + batchIndex)
                     console.log(hoprBoost.interface.encodeFunctionData("batchMint", [
@@ -95,14 +94,15 @@ async function main(
                     deadline,
                     {
                         nonce: startNonce + batchIndex,
-                        gasPrice: GAS_PRICE
+                        gasPrice
                     }
                 )
             })
         });
 
         const flatMintTxs = await Promise.all(mintTxs.flat()) as ContractTransaction[];
-
+        console.log('\nContract tx hashs')
+        console.table(flatMintTxs.map(tx => {return {url: `https://blockscout.com/xdai/mainnet/tx/${tx.hash}`}}))
         await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
 
         // We log the transaction hash and verify the NFTs from the contract

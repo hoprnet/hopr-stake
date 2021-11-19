@@ -9,7 +9,7 @@ import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
 import "solidity-coverage";
-const { MINTER_KEY, QUIKNODE_KEY } = process.env;
+const { MINTER_KEY } = process.env;
 
 const { ETHERSCAN } = process.env;
 
@@ -19,10 +19,11 @@ const hardhatConfig: HardhatUserConfig = {
     hardhat: {
       allowUnlimitedContractSize: true,
       chainId: 1337,
+      initialDate: '2021-07-27'
     },
     xdai: {
       chainId: 100,
-      url: `https://still-patient-forest.xdai.quiknode.pro/${QUIKNODE_KEY}/`,
+      url: `https://provider-proxy.hoprnet.workers.dev/xdai_mainnet`,
       accounts: MINTER_KEY
         ? [MINTER_KEY]
         : [],
@@ -72,8 +73,8 @@ task('mint', "Mints a demo NFT to a specific account", async (...args: any[]) =>
 task('batchMint', "Mints a demo NFT to a specific account", async (...args: any[]) => {
   return (await import('./tasks/batchMint')).default(args[0], args[1], args[2])
 })
-.addOptionalParam<boolean>('log', 'If the encoded data is logged in the console')
-.addOptionalParam<string>('path', 'Path to the DuneAnalytics export in csv')
+.addParam<boolean>('log', 'If the encoded data is logged in the console')
+.addParam<string>('type', 'NFT type')
 
 
 task('updateBaseURI', "Updates the base URI of all the NFTs in the smart contract", async (...args: any[]) => {
