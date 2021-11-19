@@ -10,10 +10,10 @@ const INPUT_PATH = `${process.cwd()}/inputs/`;    // location where rawdata gets
 
 const deadline = 1642424400; // Jan 17th 2022, 14:00
 const boost = {
-    "Diamond": rate(10),
-    "Gold": rate(7.5),
-    "Silver": rate(6),
-    "Bronze": rate(4.5)
+    "diamond": rate(10),
+    "gold": rate(7.5),
+    "silver": rate(6),
+    "bronze": rate(4.5)
 };
 
 /**

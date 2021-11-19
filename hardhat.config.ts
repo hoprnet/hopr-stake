@@ -19,6 +19,7 @@ const hardhatConfig: HardhatUserConfig = {
     hardhat: {
       allowUnlimitedContractSize: true,
       chainId: 1337,
+      initialDate: '2021-07-27'
     },
     xdai: {
       chainId: 100,
