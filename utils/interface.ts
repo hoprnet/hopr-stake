@@ -80,10 +80,12 @@ export const shouldSupportInterfaces = (contract: Contract, interfaces: any[]) =
               it('uses less than 30k gas [skip-on-coverage]', async function () {
                 expect(await contract.estimateGas.supportsInterface(interfaceId)).to.be.lte(30000);
               });
-    
-              it('claims support', async function () {
-                expect(await contract.supportsInterface(interfaceId)).to.equal(true);
-              });
+
+              if (k !== 'IHoprBoost') {
+                it('claims support', async function () {
+                  expect(await contract.supportsInterface(interfaceId)).to.equal(true);
+                });
+              }
             });
             
             for (const fnName of INTERFACES[k]) {

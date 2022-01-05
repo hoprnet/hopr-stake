@@ -59,7 +59,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
      * @dev Returns the boost type associated with ``tokenId``.
      * @param tokenId uint256 token Id of the boost.
      */
-    function typeOf(uint256 tokenId) external view returns (string memory) {
+    function typeOf(uint256 tokenId) external view override returns (string memory) {
         return _boostType.at(_boostTypeIndexOfId[tokenId]);
     }
 
@@ -159,7 +159,7 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
     /**
      * @dev Inherit tokenURI from {ERC721} and {ERC721URIStorage}
      */
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override(IERC721Metadata, ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
