@@ -54,7 +54,6 @@ describe('HoprBoost NFT', function () {
             ["Testnet Participant", JSON.stringify(testnetParticipantAddresses)],
         ]);
     }
-
     describe('integration tests', function () {
         before(async function () {
             await reset();

@@ -388,10 +388,7 @@ contract HoprStake2 is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGua
             return false;
         }
 
-        // selector + two bytes for string positions + 1 bytes32 for string length 
-        // = 4 + 32 * 3 = 100 gives the postition from where substring is extracted
-        uint256 position = 100 + restLen;
-        // offset so that value from the next memory (`substring`) is removed, so bitwise it needs to shift
+        // offset so that value from the next calldata (`substring`) is removed, so bitwise it needs to shift
         // log2(16) * (32 - substringLen) * 2
         uint256 offset = (32 - substringLen) * 8;
 
@@ -404,7 +401,9 @@ contract HoprStake2 is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGua
             // assuming `boostRank` or `boostType/boostRank` will never exceed 32 bytes
             // left-pad the `boostRank` extracted from the `tokenURI`, so that possible
             // extra pieces of `substring` is not included
-            trimed := shr(offset, calldataload(position))
+            // 32 jumps the storage of bytes length and restLen offsets the `baseURI`
+            trimed := shr(offset, mload(add(add(tokenURIInBytes, 32), restLen)))
+            // tokenURIInBytes32 := mload(add(add(tokenURIInBytes, 32), restLen))
             // left-pad `substring`
             shifted := shr(offset, substringInBytes32)
             // compare results
