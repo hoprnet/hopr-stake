@@ -279,23 +279,17 @@ contract HoprStake2 is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGua
     }
 
     /**
-     * @dev Unlock staking
+     * @dev Unlock staking for caller
+     */
+    function unlock() external {
+        _unlockFor(msg.sender);
+    }
+    /**
+     * @dev Unlock staking for a given account
      * @param account address Account that staked tokens.
      */
-    function unlock(address account) external {
-        require(block.timestamp > PROGRAM_END, "HoprStake: Program is ongoing, cannot unlock stake.");
-        uint256 actualStake = accounts[account].actualLockedTokenAmount;
-        _sync(account); 
-        accounts[account].actualLockedTokenAmount = 0;
-        totalLocked -= actualStake;
-        _claim(account);
-        // unlock actual staked tokens
-        IERC20(LOCK_TOKEN).safeTransfer(account, actualStake);
-        // unlock redeemed NFTs
-        for (uint256 index = 0; index < redeemedNftIndex[account]; index++) {
-            NFT_CONTRACT.transferFrom(address(this), account, redeemedNft[account][index]);
-        }
-        emit Released(account, actualStake);
+    function unlockFor(address account) external {
+        _unlockFor(account);
     }
 
     /**
@@ -317,6 +311,7 @@ contract HoprStake2 is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGua
      * @param tokenAddress address ERC721 token address.
      */
     function reclaimErc721Tokens(address tokenAddress, uint256 tokenId) external onlyOwner nonReentrant {
+        require(tokenAddress != address(NFT_CONTRACT), "HoprStake: Cannot claim HoprBoost NFT");
         IHoprBoost(tokenAddress).transferFrom(address(this), owner(), tokenId);
     }
 
@@ -438,5 +433,25 @@ contract HoprStake2 is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGua
         // send rewards to the account.
         IERC20(REWARD_TOKEN).safeTransfer(_account, amount);
         emit Claimed(_account, amount);
+    }
+
+    /**
+     * @dev Unlock staking for a given account
+     * @param _account address Account that staked tokens.
+     */
+    function _unlockFor(address _account) private {
+        require(block.timestamp > PROGRAM_END, "HoprStake: Program is ongoing, cannot unlock stake.");
+        uint256 actualStake = accounts[_account].actualLockedTokenAmount;
+        _sync(_account); 
+        accounts[_account].actualLockedTokenAmount = 0;
+        totalLocked -= actualStake;
+        _claim(_account);
+        // unlock actual staked tokens
+        IERC20(LOCK_TOKEN).safeTransfer(_account, actualStake);
+        // unlock redeemed NFTs
+        for (uint256 index = 0; index < redeemedNftIndex[_account]; index++) {
+            NFT_CONTRACT.transferFrom(address(this), _account, redeemedNft[_account][index]);
+        }
+        emit Released(_account, actualStake);
     }
 }

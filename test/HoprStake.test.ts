@@ -221,6 +221,9 @@ describe('HoprStake', function () {
                 await nftContract.connect(admin).mint(participantAddresses[2], BADGES[2].type, BADGES[2].rank, BADGES[2].nominator, BADGES[2].deadline);
                 expectRevert(nftContract.connect(participants[2]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[2], stakeContract.address, 6), "HoprStake: Cannot redeem an expired boost.");
             });
+            it ('cannot reclaim a HOPRBoost', async () => {
+                expectRevert(stake2Contract.connect(admin).reclaimErc721Tokens(nftContract.address, 0), "HoprStake: Cannot claim HoprBoost NFT");
+            });
             it ('can reclaim an ERC721', async () => {
                 await randomERC721.connect(participants[0]).transferFrom(participantAddresses[0], stakeContract.address, 0);
                 await stakeContract.connect(admin).reclaimErc721Tokens(randomERC721.address, 0);
@@ -662,8 +665,12 @@ describe('HoprStake', function () {
                 expect(BigNumber.from(isReplaced).toString()).to.equal(constants.One.toString());  // true
             });
 
+            it ('cannot unlockFor tokens', async () => {
+                expectRevert(stake2Contract.unlockFor(participantAddresses[0]), 'HoprStake: Program is ongoing, cannot unlock stake.');
+            });
+
             it ('cannot unlock tokens', async () => {
-                expectRevert(stake2Contract.unlock(participantAddresses[0]), 'HoprStake: Program is ongoing, cannot unlock stake.');
+                expectRevert(stake2Contract.unlock(), 'HoprStake: Program is ongoing, cannot unlock stake.');
             });
 
             it('can reclaim random ERC20', async () => {
