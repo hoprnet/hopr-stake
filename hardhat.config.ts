@@ -19,11 +19,19 @@ const hardhatConfig: HardhatUserConfig = {
     hardhat: {
       allowUnlimitedContractSize: true,
       chainId: 1337,
+      initialBaseFeePerGas: 10000000000,
       initialDate: '2021-07-27'
     },
     xdai: {
       chainId: 100,
       url: `https://provider-proxy.hoprnet.workers.dev/xdai_mainnet`,
+      accounts: MINTER_KEY
+        ? [MINTER_KEY]
+        : [],
+    },
+    goerli: {
+      chainId: 5,
+      url: `https://provider-proxy.hoprnet.workers.dev/eth_goerli`,
       accounts: MINTER_KEY
         ? [MINTER_KEY]
         : [],

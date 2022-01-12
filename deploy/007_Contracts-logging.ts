@@ -8,12 +8,14 @@ const main: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const wxHOPR = await deployments.get("wxHOPR");
   const HoprBoost = await deployments.get("HoprBoost");
   const HoprStake = await deployments.get("HoprStake");
+  const HoprStake2 = await deployments.get("HoprStake2");
 
   console.table([
     ["xHOPR", xHOPR.address],
     ["wxHOPR", wxHOPR.address],
     ["HoprBoost", HoprBoost.address],
     ["HoprStake", HoprStake.address],
+    ["HoprStake2", HoprStake2.address],
   ]);
 };
 export default main;
