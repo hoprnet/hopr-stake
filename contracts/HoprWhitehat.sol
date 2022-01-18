@@ -11,22 +11,50 @@ import "./mocks/ERC777Mock.sol";
 import "./mocks/ERC677Mock.sol";
 
 /*
-* CHECKLIST:
+  CHECKLIST:
+
   STEP -1. flatten contract
-  STEP 0. deploy HoprStakeRecovery
+  STEP 0. deploy HoprWhitehat
   STEP 1. transfer ownership of HoprStake to this newOwnerContract
   STEP 2. find user with minimal amount of locked tokens for testing purposes
   STEP 3. obtain the amount of rewards which that user is entitled to
   STEP 4. fund newOwnerContract with corresponding amount of wxHOPR
-  STEP 5. user needs to call setInterfaceImplementer with 
-         _addr = their address
-         _interfaceHash = 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b
-         _implementer = address of this contract
-         Useful direct link: https://blockscout.com/xdai/mainnet/address/0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24/write-contract
-  STEP 6. user calls gimmeToken on this contract
+  STEP 5. user needs to follow procedure A
+
+  PROCEDURE PARTICIPANTS:
+
+  W - HoprWhitehat contract
+  H - HoprStake contract
+  S - account which has stake locked in H
+  C - account calling the gimmeToken/0 function
+  O - account which is owner of W
+
+  PROCEDURE A (2 manual steps):
+
+  1. S calls contract function `prepare` of W
+  2. S calls contract function `gimmeToken` of W
+  3. [W-gimmeToken] sends wxHopr to H
+  4. [W-gimmeToken] calls `unlock` of H
+  5. [W-gimmeToken -> H-unlock-_claim] performs `safeTransfer` of wxHopr to S
+  6. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived] calls `reclaimErc20Tokens` of H
+  7. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived -> H-reclaimErc20Tokens] performs `safeTransfer` of xHopr to H
+  8. [W-gimmeToken -> H-unlock] transfers redeemed nfts
+  8. DONE
+
+  PROCEDURE B (1 manual step):
+
+  1. S calls contract function `prepare` of W
+  2. O calls contract function `gimmeToken` of W with S as parameter
+  3. [W-gimmeToken] sends wxHopr to H
+  4. [W-gimmeToken] calls `unlock` of H
+  5. [W-gimmeToken -> H-unlock-_claim] performs `safeTransfer` of wxHopr to S
+  6. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived] calls `reclaimErc20Tokens` of H
+  7. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived -> H-reclaimErc20Tokens] performs `safeTransfer` of xHopr to H
+  8. [W-gimmeToken -> H-unlock] transfers redeemed nfts
+  8. DONE
 */
 
-contract HoprStakeRecovery is Ownable, IERC777Recipient, IERC721Receiver {
+contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver {
     using SafeERC20 for IERC20;
 
     // utility variable used to refer to the caller
@@ -55,6 +83,19 @@ contract HoprStakeRecovery is Ownable, IERC777Recipient, IERC721Receiver {
         // keep deactivated at creation, requires manual activation by owner
         isActive = false;
         transferOwnership(_newOwner);
+    }
+
+    function prepare() external {
+        // ensure STEP 2 hasn't happened yet
+        require(ERC1820_REGISTRY.getInterfaceImplementer(msg.sender,
+                                                         TOKENS_RECIPIENT_INTERFACE_HASH) != address(this),
+                                                         "Caller has already set this contract as ERC1820 interface");
+
+        // set interface for caller
+        address caller = msg.sender;
+        ERC1820_REGISTRY.setInterfaceImplementer(caller,
+                                                 TOKENS_RECIPIENT_INTERFACE_HASH,
+                                                 address(this))
     }
 
     // entry function to be called by users who can unlock their tokens (users who have rewards)
