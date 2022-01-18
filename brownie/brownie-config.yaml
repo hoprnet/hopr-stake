@@ -1,0 +1,10 @@
+compiler:
+  solc:
+    remappings:
+      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.2.0"
+networks:
+  xdai-main-fork:
+    cmd_settings:
+      unlock:
+        - 0x5406a48f5de499c08bfb8939a3b9e66c1957d72b
+        - 0x097707143e01318734535676cfe2e5cf8b656ae8
