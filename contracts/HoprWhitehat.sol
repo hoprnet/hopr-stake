@@ -12,28 +12,60 @@ import "./mocks/ERC777Mock.sol";
 import "./mocks/ERC677Mock.sol";
 
 /*
-* CHECKLIST:
--1. flatten contract
-0. deploy newOwnerContract ;)
-1. transfer ownership of HoprStake to this newOwnerContract
-2. find user with minimal amount of locked tokens for testing purposes
-3. obtain the amount of rewards which that user is entitled to
-4. fund newOwnerContract with corresponding amount of wxHOPR
-5. user needs to call setInterfaceImplementer with 
-    _addr = their address
-    _interfaceHash = 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b
-    _implementer = address of this contract
-    https://blockscout.com/xdai/mainnet/address/0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24/write-contract
-6. user calls `gimmeToken` on this contract or the owner calls `gimmeTokenFor(staker)`
+  CHECKLIST:
+
+  STEP -1. flatten contract
+  STEP 0. deploy HoprWhitehat
+  STEP 1. transfer ownership of HoprStake to this newOwnerContract
+  STEP 2. find user with minimal amount of locked tokens for testing purposes
+  STEP 3. obtain the amount of rewards which that user is entitled to
+  STEP 4. fund newOwnerContract with corresponding amount of wxHOPR
+  STEP 5. user needs to follow procedure A
+
+  PROCEDURE PARTICIPANTS:
+
+  W - HoprWhitehat contract
+  H - HoprStake contract
+  S - account which has stake locked in H
+  C - account calling the gimmeToken/0 function
+  O - account which is owner of W
+
+  PROCEDURE A (2 manual steps):
+
+  1. S calls contract function `prepare` of W
+  2. S calls contract function `gimmeToken` of W
+  3. [W-gimmeToken] sends wxHopr to H
+  4. [W-gimmeToken] calls `unlock` of H
+  5. [W-gimmeToken -> H-unlock-_claim] performs `safeTransfer` of wxHopr to S
+  6. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived] calls `reclaimErc20Tokens` of H
+  7. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived -> H-reclaimErc20Tokens] performs `safeTransfer` of xHopr to H
+  8. [W-gimmeToken -> H-unlock] transfers redeemed nfts
+  8. DONE
+
+  PROCEDURE B (1 manual step):
+
+  1. S calls contract function `prepare` of W
+  2. O calls contract function `gimmeToken` of W with S as parameter
+  3. [W-gimmeToken] sends wxHopr to H
+  4. [W-gimmeToken] calls `unlock` of H
+  5. [W-gimmeToken -> H-unlock-_claim] performs `safeTransfer` of wxHopr to S
+  6. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived] calls `reclaimErc20Tokens` of H
+  7. [W-gimmeToken -> H-unlock-_claim -> S-W_tokensReceived -> H-reclaimErc20Tokens] performs `safeTransfer` of xHopr to H
+  8. [W-gimmeToken -> H-unlock] transfers redeemed nfts
+  8. DONE
 */
 
 contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Implementer {
     using SafeERC20 for IERC20;
-    
-    address public lastCaller;
-    bool public globalSwitch;
+
+    // utility variable used to refer to the caller
+    address public currentCaller;
+    // determine if function calls are processed
+    bool public isActive;
+    // rescued xhopr amount
     uint256 public rescuedXHoprAmount;
 
+    // instantiated references to the contracts used in Stake Season 1
     HoprBoost public myHoprBoost = HoprBoost(0x43d13D7B83607F14335cF2cB75E87dA369D056c7);
     HoprStake public myHoprStake = HoprStake(0x912F4d6607160256787a2AD40dA098Ac2aFE57AC);
     ERC777Mock public wxHopr = ERC777Mock(0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1);
@@ -42,7 +74,6 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
     IERC1820Registry private constant ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
     bytes32 private constant ERC1820_ACCEPT_MAGIC = keccak256("ERC1820_ACCEPT_MAGIC");
-
 
 
     event RequestedGimme(address indexed account, uint256 indexed entitledReward);
@@ -72,7 +103,8 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
             xHopr = ERC677Mock(_xHopr);
             wxHopr = ERC777Mock(_wxHopr);
         }
-        changeGlobalSwitch(true);
+        // keep deactivated at creation, requires manual activation by owner
+        isActive = false;
         ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
         transferOwnership(_newOwner);
     }
@@ -92,22 +124,25 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
 
     // entry function to be called by users who can unlock their tokens (users who have rewards)
     function gimmeToken() external {
-        // contract must be the recipient of 
-        require(myHoprStake.owner() == address(this), "HoprStake needs to transfer ownership");        
-        // check 1820 implementation
+        // ensure STEP 1
+        require(myHoprStake.owner() == address(this), "HoprStake needs to transfer ownership");
+        // ensure STEP 2
         require(ERC1820_REGISTRY.getInterfaceImplementer(msg.sender, TOKENS_RECIPIENT_INTERFACE_HASH) == address(this), "Caller has to set this contract as ERC1820 interface");
-        // store the caller for other hook functions
-        lastCaller = msg.sender;
-        // update caller's account (claimable rewards)
-        myHoprStake.sync(lastCaller); // updates the rewards inside the accounts mapping struct
+
+        // store caller to be used throughout the call
+        currentCaller = msg.sender;
+        // updates the rewards inside the accounts mapping struct
+        myHoprStake.sync(currentCaller);
+
         // solhint-disable-next-line no-unused-vars
-        (uint256 actualLockedTokenAmount, uint256 virtualLockedTokenAmount, uint256 lastSyncTimestamp, uint256 cumulatedRewards, uint256 claimedRewards) = myHoprStake.accounts(lastCaller);
+        (uint256 actualLockedTokenAmount, uint256 virtualLockedTokenAmount, uint256 lastSyncTimestamp, uint256 cumulatedRewards, uint256 claimedRewards) = myHoprStake.accounts(currentCaller);
         uint256 stakerEntitledReward = cumulatedRewards - claimedRewards;
-        emit RequestedGimme(lastCaller, stakerEntitledReward);
-        // fund reward to Stake contract
+        emit RequestedGimme(currentCaller, stakerEntitledReward);
+
+        // send rewards to HoprStake to make sure claim within unlock works
         wxHopr.send(address(myHoprStake), stakerEntitledReward, '0x0');
         // unlock xHOPR
-        myHoprStake.unlock(lastCaller);
+        myHoprStake.unlock(currentCaller);
     }
 
     // entry function to be called by users who can unlock their tokens (users who have rewards)
@@ -117,19 +152,19 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
         // check 1820 implementation
         require(ERC1820_REGISTRY.getInterfaceImplementer(staker, TOKENS_RECIPIENT_INTERFACE_HASH) == address(this), "Caller has to set this contract as ERC1820 interface");
         // store the caller for other hook functions
-        lastCaller = staker;
+        currentCaller = staker;
         // update caller's account (claimable rewards)
-        myHoprStake.sync(lastCaller); // updates the rewards inside the accounts mapping struct
+        myHoprStake.sync(currentCaller); // updates the rewards inside the accounts mapping struct
         // solhint-disable-next-line no-unused-vars
-        (uint256 actualLockedTokenAmount, uint256 virtualLockedTokenAmount, uint256 lastSyncTimestamp, uint256 cumulatedRewards, uint256 claimedRewards) = myHoprStake.accounts(lastCaller);
+        (uint256 actualLockedTokenAmount, uint256 virtualLockedTokenAmount, uint256 lastSyncTimestamp, uint256 cumulatedRewards, uint256 claimedRewards) = myHoprStake.accounts(currentCaller);
         uint256 stakerEntitledReward = cumulatedRewards - claimedRewards;
-        emit RequestedGimme(lastCaller, stakerEntitledReward);
+        emit RequestedGimme(currentCaller, stakerEntitledReward);
         // fund reward to Stake contract
         wxHopr.send(address(myHoprStake), stakerEntitledReward, '0x0');
         // unlock xHOPR
-        myHoprStake.unlock(lastCaller);
+        myHoprStake.unlock(currentCaller);
     }
-    
+
     // ERC777 fallback (wxHOPR aka reward tokens)
     function tokensReceived(
         address operator,
@@ -139,10 +174,10 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
         bytes calldata userData,
         bytes calldata operatorData
     ) external override {
-        if (globalSwitch) {
+        if (isActive) {
             require(msg.sender == address(wxHopr), "can only be called from wxHOPR");
             if (from == address(myHoprStake)) {            
-                require(to != address(this), "must not send ERC777 tokens to HoprWhitehat");
+                require(to == currentCaller, "must send ERC777 tokens to the caller of gimmeToken");
                 emit Called777Hook(msg.sender, from, amount);
                 // controlled-reentrancy starts here
                 myHoprStake.reclaimErc20Tokens(address(xHopr));
@@ -194,15 +229,12 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
      * @dev rescue all the NFTs of a locked staker account
      * Forward it to the original owner.
      */
-    function ownerRescueBoosterNfts(address stakerAddress) external onlyOwner {
-        for (uint c = 0; c < myHoprStake.redeemedNftIndex(stakerAddress); c++) {
-            uint tokenId = myHoprStake.redeemedNft(stakerAddress, c);
-            emit ReclaimedBoost(stakerAddress, tokenId);
-            // reclaim erc721 of the lockedAddress
-            myHoprStake.reclaimErc721Tokens(stakerAddress, tokenId);
-            // forward the 721 to the original staker
-            myHoprBoost.safeTransferFrom(address(this), stakerAddress, tokenId);
-        }
+    function ownerRescueBoosterNft(address stakerAddress, uint256 tokenId) external onlyOwner {
+        myHoprStake.reclaimErc721Tokens(stakerAddress, tokenId);
+        // reclaim erc721 of the lockedAddress
+        emit ReclaimedBoost(stakerAddress, tokenId);
+        // forward the 721 to the original staker
+        myHoprBoost.safeTransferFrom(address(this), stakerAddress, tokenId);
     }
 
     /**
@@ -224,10 +256,18 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
     }
 
     /**
-     * @dev Control the switch for ERC777 tokensReceived hook.
-     * @param status new status of the switch
+     * @dev Activate all contract functions.
      */
-    function changeGlobalSwitch(bool status) public onlyOwner {
-        globalSwitch = status;
+    function activate() public onlyOwner {
+        require(!isActive, "HoprWhitehat is already active");
+        isActive = true;
+    }
+
+    /**
+     * @dev Deactivate all contract functions.
+     */
+    function deactivate() public onlyOwner {
+        require(!isActive, "HoprWhitehat is already not active");
+        isActive = false;
     }
 }
