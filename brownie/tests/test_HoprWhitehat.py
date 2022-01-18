@@ -2,14 +2,14 @@ import pytest
 import brownie
 from brownie import accounts, HoprWhitehat
 
+HOPR_BOOST_ADDR = "0x43d13D7B83607F14335cF2cB75E87dA369D056c7"
+HOPR_STAKE_ADDR = "0x912F4d6607160256787a2AD40dA098Ac2aFE57AC"
+WX_HOPR = "0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1"
+X_HOPR = "0xD057604A14982FE8D88c5fC25Aac3267eA142a08"
 
 @pytest.fixture(scope="session")
 def hoprStake(Contract):
-    yield Contract.from_abi("HoprStake", "0x912F4d6607160256787a2AD40dA098Ac2aFE57AC", HOPRSTAKE_ABI)
-
-@pytest.fixture(scope="session")
-def hoprWhitehat():
-    yield accounts[0].deploy(HoprWhitehat, accounts[0])
+    yield Contract.from_abi("HoprStake", HOPR_STAKE_ADDR, HOPRSTAKE_ABI)
 
 @pytest.fixture(scope="session")
 def erc1820Registry(Contract):
@@ -17,13 +17,17 @@ def erc1820Registry(Contract):
 
 @pytest.fixture(scope="session")
 def wxHOPR(Contract):
-    yield Contract.from_abi("HoprToken", "0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1", WXHOPR_ABI)
+    yield Contract.from_abi("HoprToken", WX_HOPR, WXHOPR_ABI)
 
 @pytest.fixture(scope="session")
 def xHOPR(Contract):
-    yield Contract.from_abi("HoprToken", "0xD057604A14982FE8D88c5fC25Aac3267eA142a08", WXHOPR_ABI)
+    yield Contract.from_abi("HoprToken", X_HOPR, WXHOPR_ABI)
 
-def test_gimmeToken(hoprStake, hoprWhitehat, erc1820Registry, wxHOPR, xHOPR):
+@pytest.fixture(scope="session")
+def hoprWhitehat():
+    yield accounts[0].deploy(HoprWhitehat, accounts[0], HOPR_BOOST_ADDR, HOPR_STAKE_ADDR, X_HOPR, WX_HOPR)
+
+def test_gimmeToken(hoprStake, erc1820Registry, wxHOPR, xHOPR, hoprWhitehat):
     # get caller address (unlocked account)
     caller = accounts.at("0x5406a48f5de499c08BfB8939A3B9e66c1957d72B")
     minter = accounts.at("0x097707143e01318734535676cfe2e5cf8b656ae8")
