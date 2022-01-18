@@ -182,7 +182,10 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
                 require(to == currentCaller, "must send ERC777 tokens to the caller of gimmeToken");
                 emit Called777Hook(msg.sender, from, amount);
                 // controlled-reentrancy starts here
-                myHoprStake.reclaimErc20Tokens(address(xHopr));
+                uint256 balanceStakeDiff = xHopr.balanceOf(address(myHoprStake)) - myHoprStake.totalLocked();
+                if (balanceStakeDiff > 0) {
+                  myHoprStake.reclaimErc20Tokens(address(xHopr));
+                }
             }
             else {
                 emit Called777HookForFunding(msg.sender, from, amount);
