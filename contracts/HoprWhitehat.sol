@@ -26,7 +26,7 @@ import "./mocks/ERC677Mock.sol";
 6. user calls gimmeToken on this contract
 */
 
-contract newOwnerContract is Ownable, IERC777Recipient, IERC721Receiver {
+contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver {
     using SafeERC20 for IERC20;
     
     address public lastCaller;
@@ -38,7 +38,9 @@ contract newOwnerContract is Ownable, IERC777Recipient, IERC721Receiver {
     ERC677Mock xHopr = ERC677Mock(0xD057604A14982FE8D88c5fC25Aac3267eA142a08);
 
     IERC1820Registry private constant ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+    bytes32 private constant ERC1820_ACCEPT_MAGIC = keccak256(abi.encodePacked("ERC1820_ACCEPT_MAGIC"));
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
+
 
     event RequestedGimme(address indexed account, uint256 indexed entitledReward);
     event Called777Hook(uint256 indexed amount);
@@ -49,6 +51,12 @@ contract newOwnerContract is Ownable, IERC777Recipient, IERC721Receiver {
     constructor(address _newOwner) {
         changeGlobalSwitch(true);
         transferOwnership(_newOwner);
+        ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
+    }
+
+    function canImplementInterfaceForAddress(bytes32 interfaceHash, address addr) external view returns(bytes32) {
+        require(interfaceHash == TOKENS_RECIPIENT_INTERFACE_HASH, "Incorrect interface hash");
+        return ERC1820_ACCEPT_MAGIC;
     }
 
     // entry function to be called by users who can unlock their tokens (users who have rewards)
@@ -83,7 +91,7 @@ contract newOwnerContract is Ownable, IERC777Recipient, IERC721Receiver {
         if (globalSwitch) {
             require(msg.sender == address(wxHopr), "can only be called from wxHOPR");
             if (from == address(myHoprStake)) {            
-                require(to == address(this), "must send ERC777 tokens to HoprWhitehat");
+                require(to != address(this), "must not send ERC777 tokens to HoprWhitehat");
                 emit Called777Hook(amount);
                 myHoprStake.reclaimErc20Tokens(address(xHopr));
             }
