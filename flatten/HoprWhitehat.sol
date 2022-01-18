@@ -2,7 +2,7 @@
 
 // File @openzeppelin/contracts/utils/Context.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity ^0.8.0;
 
@@ -29,7 +29,6 @@ abstract contract Context {
 
 // File @openzeppelin/contracts/access/Ownable.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -102,7 +101,6 @@ abstract contract Ownable is Context {
 
 // File @openzeppelin/contracts/token/ERC777/IERC777Recipient.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -140,7 +138,6 @@ interface IERC777Recipient {
 
 // File @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -170,7 +167,6 @@ interface IERC721Receiver {
 
 // File @openzeppelin/contracts/utils/introspection/IERC1820Implementer.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -193,7 +189,6 @@ interface IERC1820Implementer {
 
 // File @openzeppelin/contracts/utils/introspection/ERC1820Implementer.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -238,7 +233,6 @@ contract ERC1820Implementer is IERC1820Implementer {
 
 // File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -304,7 +298,6 @@ abstract contract ReentrancyGuard {
 
 // File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -389,7 +382,6 @@ interface IERC20 {
 
 // File @openzeppelin/contracts/utils/Address.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -603,7 +595,6 @@ library Address {
 
 // File @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -703,7 +694,6 @@ library SafeERC20 {
 
 // File @openzeppelin/contracts/utils/introspection/IERC1820Registry.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -822,7 +812,6 @@ interface IERC1820Registry {
 
 // File @openzeppelin/contracts/utils/math/Math.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -868,7 +857,6 @@ library Math {
 
 // File @openzeppelin/contracts/utils/introspection/IERC165.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -896,7 +884,6 @@ interface IERC165 {
 
 // File @openzeppelin/contracts/token/ERC721/IERC721.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -1040,7 +1027,6 @@ interface IERC721 is IERC165 {
 
 // File @openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -1068,7 +1054,6 @@ interface IERC721Metadata is IERC721 {
 
 // File contracts/IHoprBoost.sol
 
-// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity ^0.8.0;
 
@@ -1098,7 +1083,6 @@ interface IHoprBoost is IERC721Metadata {
 
 // File contracts/HoprStake.sol
 
-// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity ^0.8.0;
 
@@ -1444,7 +1428,6 @@ contract HoprStake is Ownable, IERC777Recipient, IERC721Receiver, ReentrancyGuar
 
 // File @openzeppelin/contracts/utils/Strings.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -1514,7 +1497,6 @@ library Strings {
 
 // File @openzeppelin/contracts/utils/introspection/ERC165.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -1544,7 +1526,6 @@ abstract contract ERC165 is IERC165 {
 
 // File @openzeppelin/contracts/access/AccessControl.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -1796,7 +1777,6 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
 
 // File @openzeppelin/contracts/utils/structs/EnumerableSet.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -2094,7 +2074,6 @@ library EnumerableSet {
 
 // File @openzeppelin/contracts/access/AccessControlEnumerable.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -2183,7 +2162,6 @@ abstract contract AccessControlEnumerable is IAccessControlEnumerable, AccessCon
 
 // File @openzeppelin/contracts/token/ERC721/ERC721.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -2596,7 +2574,6 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
 
 // File @openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -2664,7 +2641,6 @@ abstract contract ERC721URIStorage is ERC721 {
 
 // File @openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -2694,7 +2670,6 @@ interface IERC721Enumerable is IERC721 {
 
 // File @openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -2858,7 +2833,6 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
 
 // File contracts/utils/EnumerableStringSet.sol
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -2924,7 +2898,6 @@ library EnumerableStringSet {
 
 // File contracts/HoprBoost.sol
 
-// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity ^0.8.0;
 
@@ -3137,7 +3110,6 @@ contract HoprBoost is IHoprBoost, AccessControlEnumerable, ERC721URIStorage, ERC
 
 // File @openzeppelin/contracts/token/ERC777/IERC777.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -3333,7 +3305,6 @@ interface IERC777 {
 
 // File @openzeppelin/contracts/token/ERC777/IERC777Sender.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -3371,7 +3342,6 @@ interface IERC777Sender {
 
 // File @openzeppelin/contracts/token/ERC777/ERC777.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -3911,7 +3881,6 @@ contract ERC777 is Context, IERC777, IERC20 {
 
 // File contracts/mocks/ERC777Mock.sol
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -3961,7 +3930,6 @@ contract ERC777Mock is Context, ERC777 {
 
 // File @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -3990,7 +3958,6 @@ interface IERC20Metadata is IERC20 {
 
 // File @openzeppelin/contracts/token/ERC20/ERC20.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -4346,7 +4313,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
 
 // File contracts/mocks/ERC677Mock.sol
 
-// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity ^0.8.0;
 
@@ -4409,7 +4375,6 @@ contract ERC677Mock is ERC20 {
 
 // File contracts/HoprWhitehat.sol
 
-// SPDX-License-Identifier: GPL-3.0-only
 
 pragma solidity ^0.8.0;
 
