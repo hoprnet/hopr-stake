@@ -40,8 +40,10 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
     ERC677Mock public xHopr = ERC677Mock(0xD057604A14982FE8D88c5fC25Aac3267eA142a08);
 
     IERC1820Registry private constant ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+    bytes32 private constant ERC1820_ACCEPT_MAGIC = keccak256(abi.encodePacked("ERC1820_ACCEPT_MAGIC"));
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
     bytes32 private constant ERC1820_ACCEPT_MAGIC = keccak256("ERC1820_ACCEPT_MAGIC");
+
 
     event RequestedGimme(address indexed account, uint256 indexed entitledReward);
     event Called777Hook(address indexed contractAddress, address indexed from, uint256 indexed amount);
@@ -73,6 +75,12 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
         changeGlobalSwitch(true);
         ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
         transferOwnership(_newOwner);
+        ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
+    }
+
+    function canImplementInterfaceForAddress(bytes32 interfaceHash, address addr) external view returns(bytes32) {
+        require(interfaceHash == TOKENS_RECIPIENT_INTERFACE_HASH, "Incorrect interface hash");
+        return ERC1820_ACCEPT_MAGIC;
     }
 
     /**
@@ -140,7 +148,7 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
         if (globalSwitch) {
             require(msg.sender == address(wxHopr), "can only be called from wxHOPR");
             if (from == address(myHoprStake)) {            
-                require(to == lastCaller, "must send ERC777 tokens to the caller of gimmeToken"); // TODO: check
+                require(to != address(this), "must not send ERC777 tokens to HoprWhitehat");
                 emit Called777Hook(msg.sender, from, amount);
                 // controlled-reentrancy starts here
                 myHoprStake.reclaimErc20Tokens(address(xHopr));
