@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC1820Implementer.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./HoprStake.sol";
 import "./HoprBoost.sol";
 import "./mocks/ERC777Mock.sol";
@@ -55,7 +56,7 @@ import "./mocks/ERC677Mock.sol";
   8. DONE
 */
 
-contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Implementer {
+contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Implementer, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // utility variable used to refer to the caller
@@ -123,7 +124,7 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
     }
 
     // entry function to be called by users who can unlock their tokens (users who have rewards)
-    function gimmeToken() external {
+    function gimmeToken() external nonReentrant {
         // ensure STEP 1
         require(myHoprStake.owner() == address(this), "HoprStake needs to transfer ownership");
         // ensure STEP 2
