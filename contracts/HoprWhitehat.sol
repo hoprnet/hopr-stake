@@ -55,7 +55,7 @@ import "./mocks/ERC677Mock.sol";
   8. DONE
 */
 
-contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver {
+contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Implementer {
     using SafeERC20 for IERC20;
 
     // utility variable used to refer to the caller
@@ -66,10 +66,10 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver {
     uint256 public rescuedXHoprAmount;
 
     // instantiated references to the contracts used in Stake Season 1
-    HoprBoost myHoprBoost = HoprBoost(0x43d13D7B83607F14335cF2cB75E87dA369D056c7);
-    HoprStake myHoprStake = HoprStake(0x912F4d6607160256787a2AD40dA098Ac2aFE57AC);
-    ERC777Mock wxHopr = ERC777Mock(0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1);
-    ERC677Mock xHopr = ERC677Mock(0xD057604A14982FE8D88c5fC25Aac3267eA142a08);
+    HoprBoost public myHoprBoost = HoprBoost(0x43d13D7B83607F14335cF2cB75E87dA369D056c7);
+    HoprStake public myHoprStake = HoprStake(0x912F4d6607160256787a2AD40dA098Ac2aFE57AC);
+    ERC777Mock public wxHopr = ERC777Mock(0xD4fdec44DB9D44B8f2b6d529620f9C0C7066A2c1);
+    ERC677Mock public xHopr = ERC677Mock(0xD057604A14982FE8D88c5fC25Aac3267eA142a08);
 
     IERC1820Registry private constant ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
