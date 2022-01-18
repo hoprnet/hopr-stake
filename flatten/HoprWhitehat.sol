@@ -4499,6 +4499,7 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
 
     // entry function to be called by users who can unlock their tokens (users who have rewards)
     function gimmeToken() external nonReentrant {
+        require(isActive, "Whitehat is not active");
         // ensure STEP 1
         require(myHoprStake.owner() == address(this), "HoprStake needs to transfer ownership");
         // ensure STEP 2
