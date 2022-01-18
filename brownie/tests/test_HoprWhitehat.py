@@ -5,8 +5,9 @@ from brownie import accounts
 def hoprStake(Contract):
     yield Contract.from_abi("HoprStake", "0x912F4d6607160256787a2AD40dA098Ac2aFE57AC", ABI)
 
-def test_something():
-    print(hoprStake.BASIC_START())
+def test_something(hoprStake):
+    print(hoprStake)
+    assert hoprStake.BASIC_START() == 1
 
 ABI = [
   {
