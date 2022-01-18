@@ -45,6 +45,7 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
     bytes32 private constant ERC1820_ACCEPT_MAGIC = keccak256("ERC1820_ACCEPT_MAGIC");
 
 
+
     event RequestedGimme(address indexed account, uint256 indexed entitledReward);
     event Called777Hook(address indexed contractAddress, address indexed from, uint256 indexed amount);
     event Called777HookForFunding(address indexed contractAddress, address indexed from, uint256 indexed amount);
