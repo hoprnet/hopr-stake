@@ -116,9 +116,7 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver {
         uint256 stakerEntitledReward = cumulatedRewards - claimedRewards;
         emit RequestedGimme(currentCaller, stakerEntitledReward);
 
-        // this will trigger the tokensReceived callback in this contract,
-        // since the caller has set the ERC180 interface before calling this
-        // function
+        // send rewards to HoprStake to make sure claim within unlock works
         wxHopr.send(address(myHoprStake), stakerEntitledReward, '0x0');
 
         // unlock xHOPR
