@@ -1,7 +1,7 @@
 import pytest
+import brownie
 from brownie import accounts, HoprWhitehat
 
-# _interfaceHash
 
 @pytest.fixture(scope="session")
 def hoprStake(Contract):
@@ -16,17 +16,25 @@ def erc1820Registry(Contract):
     yield Contract.from_abi("ERC1820Registry", "0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24", ERC1820REGISTRY_ABI)
 
 def test_gimmeToken(hoprStake, hoprWhitehat, erc1820Registry):
-    erc1820Registry.setInterfaceImplementer(
-        accounts[0],
-        "0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b",
-        hoprWhitehat.address,
-        { 'from': accounts[0] }
-    )
-    hoprStake.transferOwnership(hoprWhitehat.address, { 'from': hoprStake.owner() })
-    hoprWhitehat.gimmeToken({'from': accounts[0] })
+    print("before")
+    try:
+        print(accounts[0])
+        print(hoprWhitehat.address)
+        tx = erc1820Registry.setInterfaceImplementer(
+            accounts[0],
+            "0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b",
+            hoprWhitehat.address,
+            { 'from': accounts[0] }
+        )
+        print("the print", tx.revert_msg)
+        hoprStake.transferOwnership(hoprWhitehat.address, { 'from': hoprStake.owner() })
+        hoprWhitehat.gimmeToken({'from': accounts[0] })
+    except Exception as e:
+        assert e == ""
+    print("after")
 
 
-
+# ABIS
 HOPRSTAKE_ABI = [
   {
     "inputs": [
