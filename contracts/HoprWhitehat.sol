@@ -76,12 +76,6 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
         changeGlobalSwitch(true);
         ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
         transferOwnership(_newOwner);
-        ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
-    }
-
-    function canImplementInterfaceForAddress(bytes32 interfaceHash, address addr) external view returns(bytes32) {
-        require(interfaceHash == TOKENS_RECIPIENT_INTERFACE_HASH, "Incorrect interface hash");
-        return ERC1820_ACCEPT_MAGIC;
     }
 
     /**
