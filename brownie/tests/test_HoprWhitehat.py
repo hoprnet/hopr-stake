@@ -1,15 +1,33 @@
 import pytest
-from brownie import accounts
+from brownie import accounts, HoprWhitehat
+
+# _interfaceHash
 
 @pytest.fixture(scope="session")
 def hoprStake(Contract):
-    yield Contract.from_abi("HoprStake", "0x912F4d6607160256787a2AD40dA098Ac2aFE57AC", ABI)
+    yield Contract.from_abi("HoprStake", "0x912F4d6607160256787a2AD40dA098Ac2aFE57AC", HOPRSTAKE_ABI)
 
-def test_something(hoprStake):
-    print(hoprStake)
-    assert hoprStake.BASIC_START() == 1
+@pytest.fixture(scope="session")
+def hoprWhitehat():
+    yield accounts[0].deploy(HoprWhitehat, accounts[0])
 
-ABI = [
+@pytest.fixture(scope="session")
+def erc1820Registry(Contract):
+    yield Contract.from_abi("ERC1820Registry", "0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24", ERC1820REGISTRY_ABI)
+
+def test_gimmeToken(hoprStake, hoprWhitehat, erc1820Registry):
+    erc1820Registry.setInterfaceImplementer(
+        accounts[0],
+        "0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b",
+        hoprWhitehat.address,
+        { 'from': accounts[0] }
+    )
+    hoprStake.transferOwnership(hoprWhitehat.address, { 'from': hoprStake.owner() })
+    hoprWhitehat.gimmeToken({'from': accounts[0] })
+
+
+
+HOPRSTAKE_ABI = [
   {
     "inputs": [
       {
@@ -703,4 +721,8 @@ ABI = [
     "stateMutability": "nonpayable",
     "type": "function"
   }
+]
+
+ERC1820REGISTRY_ABI = [
+    {"type":"function","stateMutability":"nonpayable","payable":False,"outputs":[],"name":"setInterfaceImplementer","inputs":[{"type":"address","name":"_addr"},{"type":"bytes32","name":"_interfaceHash"},{"type":"address","name":"_implementer"}],"constant":False},{"type":"function","stateMutability":"view","payable":False,"outputs":[{"type":"address","name":""}],"name":"getManager","inputs":[{"type":"address","name":"_addr"}],"constant":True},{"type":"function","stateMutability":"nonpayable","payable":False,"outputs":[],"name":"setManager","inputs":[{"type":"address","name":"_addr"},{"type":"address","name":"_newManager"}],"constant":False},{"type":"function","stateMutability":"pure","payable":False,"outputs":[{"type":"bytes32","name":""}],"name":"interfaceHash","inputs":[{"type":"string","name":"_interfaceName"}],"constant":True},{"type":"function","stateMutability":"nonpayable","payable":False,"outputs":[],"name":"updateERC165Cache","inputs":[{"type":"address","name":"_contract"},{"type":"bytes4","name":"_interfaceId"}],"constant":False},{"type":"function","stateMutability":"view","payable":False,"outputs":[{"type":"address","name":""}],"name":"getInterfaceImplementer","inputs":[{"type":"address","name":"_addr"},{"type":"bytes32","name":"_interfaceHash"}],"constant":True},{"type":"function","stateMutability":"view","payable":False,"outputs":[{"type":"bool","name":""}],"name":"implementsERC165InterfaceNoCache","inputs":[{"type":"address","name":"_contract"},{"type":"bytes4","name":"_interfaceId"}],"constant":True},{"type":"function","stateMutability":"view","payable":False,"outputs":[{"type":"bool","name":""}],"name":"implementsERC165Interface","inputs":[{"type":"address","name":"_contract"},{"type":"bytes4","name":"_interfaceId"}],"constant":True},{"type":"event","name":"InterfaceImplementerSet","inputs":[{"type":"address","name":"addr","indexed":True},{"type":"bytes32","name":"interfaceHash","indexed":True},{"type":"address","name":"implementer","indexed":True}],"anonymous":False},{"type":"event","name":"ManagerChanged","inputs":[{"type":"address","name":"addr","indexed":True},{"type":"address","name":"newManager","indexed":True}],"anonymous":False}
 ]
