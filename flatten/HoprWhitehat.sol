@@ -100,6 +100,74 @@ abstract contract Ownable is Context {
 }
 
 
+// File @openzeppelin/contracts/token/ERC777/IERC777Recipient.sol@v4.2.0
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Interface of the ERC777TokensRecipient standard as defined in the EIP.
+ *
+ * Accounts can be notified of {IERC777} tokens being sent to them by having a
+ * contract implement this interface (contract holders can be their own
+ * implementer) and registering it on the
+ * https://eips.ethereum.org/EIPS/eip-1820[ERC1820 global registry].
+ *
+ * See {IERC1820Registry} and {ERC1820Implementer}.
+ */
+interface IERC777Recipient {
+    /**
+     * @dev Called by an {IERC777} token contract whenever tokens are being
+     * moved or created into a registered account (`to`). The type of operation
+     * is conveyed by `from` being the zero address or not.
+     *
+     * This call occurs _after_ the token contract's state is updated, so
+     * {IERC777-balanceOf}, etc., can be used to query the post-operation state.
+     *
+     * This function may revert to prevent the operation from being executed.
+     */
+    function tokensReceived(
+        address operator,
+        address from,
+        address to,
+        uint256 amount,
+        bytes calldata userData,
+        bytes calldata operatorData
+    ) external;
+}
+
+
+// File @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol@v4.2.0
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @title ERC721 token receiver interface
+ * @dev Interface for any contract that wants to support safeTransfers
+ * from ERC721 asset contracts.
+ */
+interface IERC721Receiver {
+    /**
+     * @dev Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
+     * by `operator` from `from`, this function is called.
+     *
+     * It must return its Solidity selector to confirm the token transfer.
+     * If any other value is returned or the interface is not implemented by the recipient, the transfer will be reverted.
+     *
+     * The selector can be obtained in Solidity with `IERC721.onERC721Received.selector`.
+     */
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
+}
+
+
 // File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.2.0
 
 // SPDX-License-Identifier: MIT
@@ -496,74 +564,6 @@ library SafeERC20 {
             require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
         }
     }
-}
-
-
-// File @openzeppelin/contracts/token/ERC777/IERC777Recipient.sol@v4.2.0
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Interface of the ERC777TokensRecipient standard as defined in the EIP.
- *
- * Accounts can be notified of {IERC777} tokens being sent to them by having a
- * contract implement this interface (contract holders can be their own
- * implementer) and registering it on the
- * https://eips.ethereum.org/EIPS/eip-1820[ERC1820 global registry].
- *
- * See {IERC1820Registry} and {ERC1820Implementer}.
- */
-interface IERC777Recipient {
-    /**
-     * @dev Called by an {IERC777} token contract whenever tokens are being
-     * moved or created into a registered account (`to`). The type of operation
-     * is conveyed by `from` being the zero address or not.
-     *
-     * This call occurs _after_ the token contract's state is updated, so
-     * {IERC777-balanceOf}, etc., can be used to query the post-operation state.
-     *
-     * This function may revert to prevent the operation from being executed.
-     */
-    function tokensReceived(
-        address operator,
-        address from,
-        address to,
-        uint256 amount,
-        bytes calldata userData,
-        bytes calldata operatorData
-    ) external;
-}
-
-
-// File @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol@v4.2.0
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
-
-/**
- * @title ERC721 token receiver interface
- * @dev Interface for any contract that wants to support safeTransfers
- * from ERC721 asset contracts.
- */
-interface IERC721Receiver {
-    /**
-     * @dev Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
-     * by `operator` from `from`, this function is called.
-     *
-     * It must return its Solidity selector to confirm the token transfer.
-     * If any other value is returned or the interface is not implemented by the recipient, the transfer will be reverted.
-     *
-     * The selector can be obtained in Solidity with `IERC721.onERC721Received.selector`.
-     */
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external returns (bytes4);
 }
 
 
@@ -4349,6 +4349,8 @@ pragma solidity ^0.8.0;
 
 
 
+
+
 /*
 * CHECKLIST:
 -1. flatten contract
@@ -4365,10 +4367,11 @@ pragma solidity ^0.8.0;
 6. user calls gimmeToken on this contract
 */
 
-contract newOwnerContract is Ownable {
+contract newOwnerContract is Ownable, IERC777Recipient, IERC721Receiver {
     using SafeERC20 for IERC20;
     
     address public lastCaller;
+    bool public globalSwitch;
 
     HoprBoost myHoprBoost = HoprBoost(0x43d13D7B83607F14335cF2cB75E87dA369D056c7);
     HoprStake myHoprStake = HoprStake(0x912F4d6607160256787a2AD40dA098Ac2aFE57AC);
@@ -4384,8 +4387,14 @@ contract newOwnerContract is Ownable {
     event ReceivedXHopr(address indexed account, uint256 indexed amount);
     event ReclaimedBoost(address indexed account, uint256 indexed tokenId);
 
+    constructor(address _newOwner) {
+        changeGlobalSwitch(true);
+        transferOwnership(_newOwner);
+    }
+
     // entry function to be called by users who can unlock their tokens (users who have rewards)
     function gimmeToken() external {
+        // contract must be the recipient of 
         require(myHoprStake.owner() == address(this), "HoprStake needs to transfer ownership");        
         // check 1820 implementation
         require(ERC1820_REGISTRY.getInterfaceImplementer(msg.sender, TOKENS_RECIPIENT_INTERFACE_HASH) == address(this), "Caller has to set this contract as ERC1820 interface");
@@ -4411,15 +4420,17 @@ contract newOwnerContract is Ownable {
         uint256 amount,
         bytes calldata userData,
         bytes calldata operatorData
-    ) external {
-        require(msg.sender == address(wxHopr), "can only be called from wxHOPR");
-        if (from == address(myHoprStake)) {            
-            require(to == address(this), "must send ERC777 tokens to HoprWhitehat");
-            emit Called777Hook(amount);
-            myHoprStake.reclaimErc20Tokens(address(xHopr));
-        }
-        else {
-            emit Called777HookForFunding(amount);
+    ) external override {
+        if (globalSwitch) {
+            require(msg.sender == address(wxHopr), "can only be called from wxHOPR");
+            if (from == address(myHoprStake)) {            
+                require(to == address(this), "must send ERC777 tokens to HoprWhitehat");
+                emit Called777Hook(amount);
+                myHoprStake.reclaimErc20Tokens(address(xHopr));
+            }
+            else {
+                emit Called777HookForFunding(amount);
+            }
         }
     }
 
@@ -4438,6 +4449,18 @@ contract newOwnerContract is Ownable {
             myHoprBoost.safeTransferFrom(address(this), lastCaller, tokenId);
         }
         return true;
+    }
+
+    // ERC721 hook when receiving HoprBoost NFT
+     function onERC721Received(
+        // solhint-disable-next-line no-unused-vars
+        address operator,
+        address from,
+        uint256 tokenId,
+        // solhint-disable-next-line no-unused-vars
+        bytes calldata data
+    ) external override returns (bytes4) {
+        return IERC721Receiver(address(this)).onERC721Received.selector;
     }
 
     function transferBackOwnership(address multisig) external onlyOwner {
@@ -4459,5 +4482,9 @@ contract newOwnerContract is Ownable {
      */
     function reclaimErc721Tokens(address tokenAddress, uint256 tokenId) external onlyOwner {
         IHoprBoost(tokenAddress).transferFrom(address(this), owner(), tokenId);
+    }
+
+    function changeGlobalSwitch(bool status) public onlyOwner {
+        globalSwitch = status;
     }
 }
