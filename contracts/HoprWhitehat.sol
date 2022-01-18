@@ -272,7 +272,7 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
      * @dev Deactivate all contract functions.
      */
     function deactivate() public onlyOwner {
-        require(!isActive, "HoprWhitehat is already not active");
+        require(isActive, "HoprWhitehat is already not active");
         isActive = false;
     }
 }
