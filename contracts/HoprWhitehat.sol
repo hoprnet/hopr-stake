@@ -192,15 +192,12 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
      * @dev rescue all the NFTs of a locked staker account
      * Forward it to the original owner.
      */
-    function ownerRescueBoosterNfts(address stakerAddress) external onlyOwner {
-        for (uint c = 0; c < myHoprStake.redeemedNftIndex(stakerAddress); c++) {
-            uint tokenId = myHoprStake.redeemedNft(stakerAddress, c);
-            emit ReclaimedBoost(stakerAddress, tokenId);
-            // reclaim erc721 of the lockedAddress
-            myHoprStake.reclaimErc721Tokens(stakerAddress, tokenId);
-            // forward the 721 to the original staker
-            myHoprBoost.safeTransferFrom(address(this), stakerAddress, tokenId);
-        }
+    function ownerRescueBoosterNft(address stakerAddress, uint256 tokenId) external onlyOwner {
+        myHoprStake.reclaimErc721Tokens(stakerAddress, tokenId);
+        // reclaim erc721 of the lockedAddress
+        emit ReclaimedBoost(stakerAddress, tokenId);
+        // forward the 721 to the original staker
+        myHoprBoost.safeTransferFrom(address(this), stakerAddress, tokenId);
     }
 
     /**
