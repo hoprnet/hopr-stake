@@ -5,7 +5,7 @@ import { getGasPrice } from '../utils/mint';
 import { ContractTransaction } from 'ethers';
 
 const HOPR_WHITEHAT = "0x153Aa74a8588606f134B2d35eB6e707a7d550705";
-// raw data comes from https://dune.xyz/queries/356789
+// nft comes from https://dune.xyz/queries/361265
 const INPUT_FILE = `${process.cwd()}/rescue/deadlocked.csv`;    // location where rawdata gets stored
 // airdrop data comes from https://dune.xyz/queries/361192
 
