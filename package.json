@@ -20,7 +20,8 @@
     "batchmint:local": "hardhat batchMint --log true --type $NAME --network hardhat",
     "batchmint:xdai": "hardhat batchMint --log true --type $NAME --network xdai",
     "batchmint:local:save-log": "yarn batchmint:local | tee outputs/$NAME.log",
-    "batchmint:xdai:save-log": "yarn batchmint:xdai | tee outputs/$NAME.log"
+    "batchmint:xdai:save-log": "yarn batchmint:xdai | tee outputs/$NAME.log",
+    "rescue": "hardhat rescue --network xdai"
   },
   "files": [
     "lib",

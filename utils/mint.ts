@@ -1,4 +1,3 @@
-
 import parse, { Parser } from 'csv-parse'
 import {createReadStream} from 'fs'
 import { utils } from 'ethers'
@@ -10,14 +9,14 @@ type DuneExportType = {
 }
 export const MAX_BATCH_MINT_FOR = 50; // can pass max. 50 addresses for batch mint
 export const GAS_ESTIMATION_PER_BATCH = 10500000;
-export const SAFE_GAS_PRICE = 2;
+export const SAFE_GAS_PRICE = 5;
 
 export const getGasPrice = async () => {
     let price: number;
     try {
         const gasObj = await axios.get('https://blockscout.com/xdai/mainnet/api/v1/gas-price-oracle');
         console.log("\nCurrent network price", gasObj.data);
-        price = gasObj.status === 200 ? gasObj.data.fast : SAFE_GAS_PRICE
+        price = gasObj.status === 200 ? gasObj.data.average : SAFE_GAS_PRICE
     } catch (error) {
         price = SAFE_GAS_PRICE
     }
