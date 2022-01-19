@@ -2,13 +2,12 @@ import parse, { Parser } from 'csv-parse'
 import {createReadStream} from 'fs'
 import type { HardhatRuntimeEnvironment, RunSuperFunction } from 'hardhat/types'
 import { getGasPrice } from '../utils/mint';
-// import { BigNumber } from 'ethers';
-// import { ContractTransaction } from 'ethers';
+import { ContractTransaction } from 'ethers';
 
 const HOPR_WHITEHAT = "0x153Aa74a8588606f134B2d35eB6e707a7d550705";
+// raw data comes from https://dune.xyz/queries/356789
 const INPUT_FILE = `${process.cwd()}/rescue/deadlocked.csv`;    // location where rawdata gets stored
-// raw data comes from https://dune.xyz/queries/357489
-// const GAS_ESTIMATION_PER_UNLOCK = 600000;
+// airdrop data comes from https://dune.xyz/queries/361192
 
 type DuneExportType = {
     account: string
@@ -56,10 +55,6 @@ async function main(
     
     // compare native balance with estimated cost
     const gasPrice = await getGasPrice();
-    // skip gas estimation
-    // const estimatedGas = BigNumber.from(GAS_ESTIMATION_PER_UNLOCK)
-    //                         .mul(BigNumber.from(gasPrice)).toString();
-    // const minterBalance = await admin.getBalance();
 
     try {
         // build functions
@@ -69,26 +64,22 @@ async function main(
             console.log(whitehat.interface.encodeFunctionData("ownerRescueBoosterNftInBatch", [
                 account
             ]))
-            return whitehat.estimateGas.ownerRescueBoosterNftInBatch(account);
-            // return whitehat.connect(admin).ownerRescueBoosterNftInBatch(
-            //     account
-            //     {
-            //         nonce,
-            //         gasPrice
-            //     }
-            // )
+            return whitehat.connect(admin).ownerRescueBoosterNftInBatch(
+                account,
+                {
+                    nonce,
+                    gasPrice
+                }
+            )
         });
 
-        // const flatMintTxs = await Promise.all(rescueTxs.flat()) as ContractTransaction[];
-        // console.log('\nContract tx hashs')
-        // console.table(flatMintTxs.map(tx => {return {url: `https://blockscout.com/xdai/mainnet/tx/${tx.hash}`}}))
-        // await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
+        const flatMintTxs = await Promise.all(rescueTxs.flat()) as ContractTransaction[];
+        console.log('\nContract tx hashs')
+        console.table(flatMintTxs.map(tx => {return {url: `https://blockscout.com/xdai/mainnet/tx/${tx.hash}`}}))
+        await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
 
-        // // We log the transaction hash and verify the NFTs from the contract
-        // console.log(`\nNFTs rescued in ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
-        const log = await Promise.all(rescueTxs)
-        console.log(gasPrice);
-        console.log(log.reduce((acc, cur) => acc.add(cur)).toString());
+        // We log the transaction hash and verify the NFTs from the contract
+        console.log(`\nNFTs rescued in ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
     } catch (error) {
         console.error(error)
     }
