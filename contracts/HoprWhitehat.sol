@@ -182,8 +182,7 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
                 require(to == currentCaller, "must send ERC777 tokens to the caller of gimmeToken");
                 emit Called777Hook(msg.sender, from, amount);
                 // controlled-reentrancy starts here
-                uint256 balanceStakeDiff = xHopr.balanceOf(address(myHoprStake)) - myHoprStake.totalLocked();
-                if (balanceStakeDiff > 0) {
+                if (xHopr.balanceOf(address(myHoprStake)) > myHoprStake.totalLocked()) {
                   myHoprStake.reclaimErc20Tokens(address(xHopr));
                 }
             }
@@ -235,11 +234,27 @@ contract HoprWhitehat is Ownable, IERC777Recipient, IERC721Receiver, ERC1820Impl
      * Forward it to the original owner.
      */
     function ownerRescueBoosterNft(address stakerAddress, uint256 tokenId) external onlyOwner {
-        myHoprStake.reclaimErc721Tokens(stakerAddress, tokenId);
+        myHoprStake.reclaimErc721Tokens(address(myHoprBoost), tokenId);
         // reclaim erc721 of the lockedAddress
         emit ReclaimedBoost(stakerAddress, tokenId);
         // forward the 721 to the original staker
         myHoprBoost.safeTransferFrom(address(this), stakerAddress, tokenId);
+    }
+
+    /**
+     * @dev rescue all the NFTs of a locked staker account
+     * Forward it to the original owner.
+     */
+    function ownerRescueBoosterNftInBatch(address stakerAddress) external onlyOwner {
+        uint256 numBoost = myHoprStake.redeemedNftIndex(stakerAddress);
+        for (uint256 index = 0; index < numBoost; index++) {
+            uint256 tokenId = myHoprStake.redeemedNft(stakerAddress, index);
+            myHoprStake.reclaimErc721Tokens(address(myHoprBoost), tokenId);
+            // reclaim erc721 of the lockedAddress
+            emit ReclaimedBoost(stakerAddress, tokenId);
+            // forward the 721 to the original staker
+            myHoprBoost.safeTransferFrom(address(this), stakerAddress, tokenId);
+        }
     }
 
     /**

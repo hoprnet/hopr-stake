@@ -170,28 +170,41 @@ describe('HoprWhitehat', function () {
             });
         });
         
-        // describe('nftBoost and other ERC721 tokens', function () {
-        //     let randomERC721;
-        //     it ('cannot receive an boost-like random ERC721 token', async () => {
-        //         randomERC721 = await deployContract2(deployer, "HoprBoost", adminAddress, "");
-        //         // create a random NFT
-        //         await randomERC721.connect(admin).mint(participantAddresses[0], BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline);
-        //         expectRevert(randomERC721.connect(participants[0]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[0], stakeContract.address, 0), "HoprStake: Cannot SafeTransferFrom tokens other than HoprBoost.");
-        //     });
-        //     it ('cannot redeem a boost when the deadline has passed', async () => {
-        //         // create the 6th NFT.
-        //         await nftContract.connect(admin).mint(participantAddresses[2], BADGES[2].type, BADGES[2].rank, BADGES[2].nominator, BADGES[2].deadline);
-        //         expectRevert(nftContract.connect(participants[2]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[2], stakeContract.address, 6), "HoprStake: Cannot redeem an expired boost.");
-        //     });
-        //     it ('cannot reclaim a HOPRBoost', async () => {
-        //         expectRevert(stake2Contract.connect(admin).reclaimErc721Tokens(nftContract.address, 0), "HoprStake: Cannot claim HoprBoost NFT");
-        //     });
-        //     it ('can reclaim an ERC721', async () => {
-        //         await randomERC721.connect(participants[0]).transferFrom(participantAddresses[0], stakeContract.address, 0);
-        //         await stakeContract.connect(admin).reclaimErc721Tokens(randomERC721.address, 0);
-        //         expect((await randomERC721.ownerOf(0)).toString()).to.equal(adminAddress);
-        //     });
-        // });
+        describe('nftBoost and other ERC721 tokens', function () {
+            before(async function () {
+                await reset();
+                // stakers stake all the NFTs and 1000 xHOPR token
+                const nftIds = Array.from({length:6}, (v, i) => i)
+                await Promise.all(nftIds.map(nftId => {
+                    const ownerIndex = nftId < 3 ? 0 : 2; // [0, 1, 2]: staker0; [3, 4, 5]: staker2
+                    return nftContract.connect(stakers[ownerIndex]).functions["safeTransferFrom(address,address,uint256)"](stakerAddresses[ownerIndex], stakeContract.address, nftId);
+                }))
+                // transfer ownership
+                await stakeContract.connect(admin).transferOwnership(whitehatContract.address);
+            })
+            it ('nfts are staked in the staking contract', async () => {
+                expect((await nftContract.ownerOf(0)).toString()).to.equal(stakeContract.address);
+                expect((await nftContract.ownerOf(1)).toString()).to.equal(stakeContract.address);
+                expect((await nftContract.ownerOf(2)).toString()).to.equal(stakeContract.address);
+                expect((await nftContract.ownerOf(3)).toString()).to.equal(stakeContract.address);
+                expect((await nftContract.ownerOf(4)).toString()).to.equal(stakeContract.address);
+                expect((await nftContract.ownerOf(5)).toString()).to.equal(stakeContract.address);
+            });
+            it ('allows owner to reclaim boost nfts in batch', async () => {
+                await expect(whitehatContract.connect(admin).ownerRescueBoosterNftInBatch(stakerAddresses[0]))
+                    .to.emit(whitehatContract, 'ReclaimedBoost')
+                    .withArgs(stakerAddresses[0], 0)
+                    .to.emit(whitehatContract, 'ReclaimedBoost')
+                    .withArgs(stakerAddresses[0], 1)
+                    .to.emit(whitehatContract, 'ReclaimedBoost')
+                    .withArgs(stakerAddresses[0], 2)
+            });
+            it ('hopr boost nfts are returned to original stakers', async () => {
+                expect((await nftContract.ownerOf(0)).toString()).to.equal(stakerAddresses[0]);
+                expect((await nftContract.ownerOf(1)).toString()).to.equal(stakerAddresses[0]);
+                expect((await nftContract.ownerOf(2)).toString()).to.equal(stakerAddresses[0]);
+            });
+        });
     });
 
     describe('Integration: When s1 PROGRAM_END', function () {
