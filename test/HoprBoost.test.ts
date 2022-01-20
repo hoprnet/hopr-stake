@@ -8,7 +8,9 @@ import { shouldSupportInterfaces } from '../utils/interface';
 import { getParamFromTxResponse } from '../utils/events';
 import { BADGES, baseURI, MINTER_ROLE, NAME, SYMBOL } from '../utils/constants';
 
-describe('HoprBoost NFT', function () {
+const { TEST_WHITEHAT_ONLY } = process.env;
+
+(TEST_WHITEHAT_ONLY.toLowerCase() == 'true' ? describe.skip : describe)('HoprBoost NFT', function () {
     let deployer: Signer;
     let admin: Signer;
     let minter2: Signer;

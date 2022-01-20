@@ -8,6 +8,8 @@ const HOPR_WHITEHAT = "0x153Aa74a8588606f134B2d35eB6e707a7d550705";
 // nft comes from https://dune.xyz/queries/361265
 const INPUT_FILE = `${process.cwd()}/rescue/deadlocked.csv`;    // location where rawdata gets stored
 // airdrop data comes from https://dune.xyz/queries/361192
+// const BATCH_SIZE = 10; // cut in batches to avoid provider error
+// const PAUSE_BETWEEN_BATCH = 10000; // 10s
 
 type DuneExportType = {
     account: string
@@ -57,29 +59,28 @@ async function main(
     const gasPrice = await getGasPrice();
 
     try {
-        // build functions
-        const rescueTxs = accounts.map((account: string, accountIndex: number) => {
+        // rpc provider may have trottle. 
+        // Submit transactions in order
+        for (let accountIndex = 0; accountIndex < accounts.length; accountIndex++) {
+            // if (accountIndex % BATCH_SIZE === 0) {
+            //     await new Promise(resolve => setTimeout(resolve, PAUSE_BETWEEN_BATCH))
+            // }
+            const account = accounts[accountIndex];
             const nonce = currentNonce + accountIndex;
             console.log('\n   >> Transaction Nr.%d, data payload:', nonce)
             console.log(whitehat.interface.encodeFunctionData("ownerRescueBoosterNftInBatch", [
                 account
             ]))
-            return whitehat.connect(admin).ownerRescueBoosterNftInBatch(
+            const tx: ContractTransaction = await whitehat.connect(admin).ownerRescueBoosterNftInBatch(
                 account,
                 {
                     nonce,
                     gasPrice
                 }
             )
-        });
-
-        const flatMintTxs = await Promise.all(rescueTxs.flat()) as ContractTransaction[];
-        console.log('\nContract tx hashs')
-        console.table(flatMintTxs.map(tx => {return {url: `https://blockscout.com/xdai/mainnet/tx/${tx.hash}`}}))
-        await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
-
-        // We log the transaction hash and verify the NFTs from the contract
-        console.log(`\nNFTs rescued in ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
+            const receipt = await tx.wait()
+            console.log(`\n ${receipt.events.length} NFTs rescued in transaction ${tx.hash} for account ${account}`);
+        }
     } catch (error) {
         console.error(error)
     }

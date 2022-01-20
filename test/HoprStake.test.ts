@@ -23,7 +23,9 @@ const calculateRewards = (baseTokenAmount: number, duration: number, factors: nu
     return utils.parseUnits(baseTokenAmount.toFixed(), 'ether').mul(BigNumber.from(duration)).mul(cumulatedFactors).div(utils.parseUnits('1.0', 12)).toString();
 };
 
-describe('HoprStake', function () {
+const { TEST_WHITEHAT_ONLY } = process.env;
+
+(TEST_WHITEHAT_ONLY.toLowerCase() == 'true' ? describe.skip : describe)('HoprStake', function () {
     let deployer: Signer;
     let admin: Signer;
     let participants: Signer[];

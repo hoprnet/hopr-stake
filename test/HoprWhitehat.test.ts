@@ -3,13 +3,15 @@ import { constants, Contract, Signer, utils } from 'ethers'
 import { before, it } from 'mocha';
 import { expect } from 'chai'
 // import expectRevert from "../../utils/exception";
-import { deployContract, deployContract2, deployContract4 } from "../../utils/contracts";
-import { deployRegistry } from '../../utils/registry';
-import expectRevert from '../../utils/exception';
-import { advanceTimeForNextBlock, latestBlockTime } from '../../utils/time';
+import { deployContract, deployContract2, deployContract4 } from "../utils/contracts";
+import { deployRegistry } from '../utils/registry';
+import expectRevert from '../utils/exception';
+import { advanceTimeForNextBlock, latestBlockTime } from '../utils/time';
 // import { advanceTimeForNextBlock, latestBlockTime } from '../../utils/time';
 
-describe('HoprWhitehat', function () {
+const { TEST_WHITEHAT_ONLY } = process.env;
+
+(TEST_WHITEHAT_ONLY.toLowerCase() == 'true' ? describe : describe.skip)('HoprWhitehat', function () {
     let deployer: Signer;
     let admin: Signer;
     let stakers: Signer[];

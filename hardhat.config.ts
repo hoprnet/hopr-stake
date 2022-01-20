@@ -9,9 +9,8 @@ import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
 import "solidity-coverage";
-const { MINTER_KEY } = process.env;
 
-const { ETHERSCAN } = process.env;
+const { ETHERSCAN , MINTER_KEY } = process.env;
 
 const hardhatConfig: HardhatUserConfig = {
   defaultNetwork: "localhost",
@@ -57,7 +56,7 @@ const hardhatConfig: HardhatUserConfig = {
   },
   paths: {
     sources: "./contracts",
-    tests: "./test/rescue",
+    tests: "./test",
     cache: "./hardhat/cache",
     artifacts: "./hardhat/artifacts",
   },
