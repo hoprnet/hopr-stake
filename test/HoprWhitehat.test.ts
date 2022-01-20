@@ -10,8 +10,9 @@ import { advanceTimeForNextBlock, latestBlockTime } from '../utils/time';
 // import { advanceTimeForNextBlock, latestBlockTime } from '../../utils/time';
 
 const { TEST_WHITEHAT_ONLY } = process.env;
+const whitehatTestOnly = !TEST_WHITEHAT_ONLY || TEST_WHITEHAT_ONLY.toLowerCase() !== 'true'? false : true;
 
-(TEST_WHITEHAT_ONLY.toLowerCase() == 'true' ? describe : describe.skip)('HoprWhitehat', function () {
+(whitehatTestOnly ? describe : describe.skip)('HoprWhitehat', function () {
     let deployer: Signer;
     let admin: Signer;
     let stakers: Signer[];

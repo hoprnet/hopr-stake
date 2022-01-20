@@ -9,8 +9,9 @@ import { getParamFromTxResponse } from '../utils/events';
 import { BADGES, baseURI, MINTER_ROLE, NAME, SYMBOL } from '../utils/constants';
 
 const { TEST_WHITEHAT_ONLY } = process.env;
+const whitehatTestOnly = !TEST_WHITEHAT_ONLY || TEST_WHITEHAT_ONLY.toLowerCase() !== 'true'? false : true;
 
-(TEST_WHITEHAT_ONLY.toLowerCase() == 'true' ? describe.skip : describe)('HoprBoost NFT', function () {
+(whitehatTestOnly ? describe.skip : describe)('HoprBoost NFT', function () {
     let deployer: Signer;
     let admin: Signer;
     let minter2: Signer;

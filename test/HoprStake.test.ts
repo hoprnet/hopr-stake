@@ -24,8 +24,9 @@ const calculateRewards = (baseTokenAmount: number, duration: number, factors: nu
 };
 
 const { TEST_WHITEHAT_ONLY } = process.env;
+const whitehatTestOnly = !TEST_WHITEHAT_ONLY || TEST_WHITEHAT_ONLY.toLowerCase() !== 'true'? false : true;
 
-(TEST_WHITEHAT_ONLY.toLowerCase() == 'true' ? describe.skip : describe)('HoprStake', function () {
+(whitehatTestOnly ? describe.skip : describe)('HoprStake', function () {
     let deployer: Signer;
     let admin: Signer;
     let participants: Signer[];
