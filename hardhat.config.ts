@@ -9,9 +9,8 @@ import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
 import "solidity-coverage";
-const { MINTER_KEY } = process.env;
 
-const { ETHERSCAN } = process.env;
+const { ETHERSCAN , MINTER_KEY } = process.env;
 
 const hardhatConfig: HardhatUserConfig = {
   defaultNetwork: "localhost",
@@ -83,7 +82,9 @@ task('batchMint', "Mints a demo NFT to a specific account", async (...args: any[
 })
 .addParam<boolean>('log', 'If the encoded data is logged in the console')
 .addParam<string>('type', 'NFT type')
-
+task('rescue', "Rescue NFTs", async (...args: any[]) => {
+    return (await import('./tasks/rescue')).default(args[0], args[1], args[2])
+})
 
 task('updateBaseURI', "Updates the base URI of all the NFTs in the smart contract", async (...args: any[]) => {
   return (await import('./tasks/updateBaseURI')).default(args[0], args[1], args[2])

@@ -7,7 +7,10 @@ import expectRevert from "../utils/exception";
 import { getParamFromTxResponse } from '../utils/events';
 import { advanceTimeForNextBlock, latestBlockTime } from '../utils/time';
 
-describe('HoprStake2', function () {
+const { TEST_WHITEHAT_ONLY } = process.env;
+const whitehatTestOnly = !TEST_WHITEHAT_ONLY || TEST_WHITEHAT_ONLY.toLowerCase() !== 'true'? false : true;
+
+(whitehatTestOnly ? describe.skip : describe)('HoprStake2', function () {
     let deployer: Signer;
     let admin: Signer;
     let participants: Signer[];
