@@ -20,6 +20,7 @@ This script allows the HoprBoost minter to mint Boost NFTs of **one** "type" and
     - Addresses in the column `eoa` should start with `0x` and wrapped by `>` and `<`. The followings are valid examples of an `eoa` entry: 
         - `"<a href=""https://blockscout.com/xdai/mainnet/address/0xf69c45b4246fd91f17ab9851987c7f100e0273cf"" target=""_blank"">0xf69c45b4246fd91f17ab9851987c7f100e0273cf</a>"` 
         - `>0xea674fdde714fd979de3edf0f56aa9716b898ec8<`
+    - If the type has been previously minted (e.g. there's already a `DAO_v2.csv` in the `inputs` folder and `DAO_v2.log` in the `outputs` folder), please rename the old file to avoid being overridden. (e.g. Rename the old file into `DAO_v2_batch1.csv` and `DAO_v2_batch1.log` respectively).
 
 2. Change parameters in [`tasks/batchMint.ts`](./tasks/batchMint.ts#L12) based on the "Request to mint NFT":
 ```ts
@@ -79,6 +80,14 @@ NAME="DAO_v2" yarn batchmint:xdai
 To renounce its `MINTER_ROLE`, 
     - Go to [Boost contract on blockscout explorer](https://blockscout.com/xdai/mainnet/address/0x43d13D7B83607F14335cF2cB75E87dA369D056c7/write-contract) and connect to MetaMask.
     - Insert "`0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6`" and `<your account address>` into fields "7. renounceRole" → "role(bytes32)" and "account(address)" respectively and click "Write".
+7. Create a new branch `nft/<type>` and commit input csv and output logs. E.g. 
+```
+git checkout -b nft/Wildhorn_v2
+git add .
+git commit -am "Mint NFT Wildhorn_v2"
+git push --set-upstream origin nft/Wildhorn_v2
+```
+and create a pull request to `main` base in the [hopr-stake repo](https://github.com/hoprnet/hopr-stake/pulls) and merge it. 
 ## Technical Specification
 This incentive program will take place on the xDAI chain - Locking xHOPR to receive wxHOPR rewards.  
 Two smart contracts are introduced for this incentive program:
