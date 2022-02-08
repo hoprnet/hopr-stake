@@ -23,7 +23,7 @@ const hardhatConfig: HardhatUserConfig = {
     },
     xdai: {
       chainId: 100,
-      url: `https://provider-proxy.hoprnet.workers.dev/xdai_mainnet`,
+      url: `https://dai.poa.network`,
       accounts: MINTER_KEY
         ? [MINTER_KEY]
         : [],
