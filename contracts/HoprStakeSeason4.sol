@@ -82,6 +82,7 @@ contract HoprStakeSeason4 is Ownable, IERC777Recipient, IERC721Receiver, Reentra
         }
         // block a selection of HoprBoost NFTs
         _ownerBlockNftType(2); // HODLr
+        _ownerBlockNftType(3); // Wildhorn_v1
         _ownerBlockNftType(4); // PuzzleHunt_v1
         _ownerBlockNftType(7); // PuzzleHunt_v2
         _ownerBlockNftType(8); // Wildhorn_v2
