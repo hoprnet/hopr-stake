@@ -12,15 +12,15 @@ const main: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const xHOPR = await deployments.get("xHOPR");
   const wxHOPR = await deployments.get("wxHOPR");
 
-  await deploy("HoprStake", {
+  await deploy("HoprStakeSeason3", {
     from: deployer,
     args: [HoprBoost.address, admin, xHOPR.address, wxHOPR.address],
     log: true,
   });
 };
 
-main.tags = ['HoprStake'];
+main.tags = ['HoprStakeSeason3'];
 main.dependencies = ['xHOPR', 'wxHOPR', 'HoprBoost'];
-main.skip = async (env: HardhatRuntimeEnvironment) => !!env.network.tags.production || !!env.network.tags.staging
+// main.skip = async (env: HardhatRuntimeEnvironment) => !!env.network.tags.production || !!env.network.tags.staging
 
 export default main;

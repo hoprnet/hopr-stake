@@ -10,7 +10,7 @@ import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
 import "solidity-coverage";
 
-const { ETHERSCAN , MINTER_KEY } = process.env;
+const { ETHERSCAN , MINTER_KEY, DEPLOYER_PRIVATE_KEY } = process.env;
 
 const hardhatConfig: HardhatUserConfig = {
   defaultNetwork: "localhost",
@@ -19,27 +19,38 @@ const hardhatConfig: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       chainId: 1337,
       initialBaseFeePerGas: 10000000000,
-      initialDate: '2021-07-27'
+      initialDate: '2021-07-27',
+      tags: ["test"]
     },
     xdai: {
       chainId: 100,
       url: `https://provider-proxy.hoprnet.workers.dev/xdai_mainnet`,
-      accounts: MINTER_KEY
-        ? [MINTER_KEY]
-        : [],
+      accounts: [MINTER_KEY ?? '', DEPLOYER_PRIVATE_KEY ?? ''],
+      tags: ["production"]
     },
     goerli: {
       chainId: 5,
       url: `https://provider-proxy.hoprnet.workers.dev/eth_goerli`,
-      accounts: MINTER_KEY
-        ? [MINTER_KEY]
-        : [],
+      accounts: [MINTER_KEY ?? '', DEPLOYER_PRIVATE_KEY ?? ''],
+      tags: ["staging"]
     },
   },
   namedAccounts: {
-    deployer: 0,
-    admin: 1,
-    alice: 2
+    deployer: {
+      default: 0,
+      "goerli": 1,
+      "xdai": 1
+    },
+    admin: {
+      default: 1,
+      "goerli": '0xA18732DC751BE0dB04157eb92C92BA9d0fC09FC5',
+      "xdai": '0xE9131488563776DE7FEa238d6112c5dA46be9a9F'
+    },
+    alice: {
+      default: 2,
+      "goerli": '0x3dA21EB3D7d40fEA6bd78c627Cc9B1F59E7481E1',
+      "xdai": '0x3dA21EB3D7d40fEA6bd78c627Cc9B1F59E7481E1'
+    }
   },
   solidity: {
     compilers: [
