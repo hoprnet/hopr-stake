@@ -25,13 +25,13 @@ const hardhatConfig: HardhatUserConfig = {
     xdai: {
       chainId: 100,
       url: `https://provider-proxy.hoprnet.workers.dev/xdai_mainnet`,
-      accounts: [MINTER_KEY ?? '', DEPLOYER_PRIVATE_KEY ?? ''],
+      accounts: [MINTER_KEY || [], DEPLOYER_PRIVATE_KEY || []].flat(),
       tags: ["production"]
     },
     goerli: {
       chainId: 5,
       url: `https://provider-proxy.hoprnet.workers.dev/eth_goerli`,
-      accounts: [MINTER_KEY ?? '', DEPLOYER_PRIVATE_KEY ?? ''],
+      accounts: [MINTER_KEY || [], DEPLOYER_PRIVATE_KEY || []].flat(),
       tags: ["staging"]
     },
   },
