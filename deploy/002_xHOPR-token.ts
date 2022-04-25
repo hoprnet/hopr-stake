@@ -13,4 +13,7 @@ const main: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 };
+main.tags = ['xHOPR'];
+main.skip = async (env: HardhatRuntimeEnvironment) => !!env.network.tags.production || !!env.network.tags.staging
+
 export default main;
