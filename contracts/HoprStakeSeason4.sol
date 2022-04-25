@@ -264,6 +264,7 @@ contract HoprStakeSeason4 is Ownable, IERC777Recipient, IERC721Receiver, Reentra
         // update boost factor
         uint256 typeId = NFT_CONTRACT.typeIndexOf(tokenId);
         (uint256 factor, ) = NFT_CONTRACT.boostOf(tokenId);
+        require(!isBlockedNft[typeId], "HoprStake: Can only redeem NFTs of allowed types.");
 
         uint256 boostIndex = redeemedFactorIndex[from];
         uint256 index = 0;
@@ -271,7 +272,6 @@ contract HoprStakeSeason4 is Ownable, IERC777Recipient, IERC721Receiver, Reentra
             // loop through redeemed factors, replace the factor of the same type, if the current factor is larger.
             uint256 redeemedId = redeemedFactor[from][index];
             uint256 redeemedIndex = NFT_CONTRACT.typeIndexOf(redeemedId);
-            require(!isBlockedNft[redeemedIndex], "HoprStake: Can only redeem NFTs of allowed types.");
             (uint256 redeemedFactorValue, ) = NFT_CONTRACT.boostOf(redeemedId);
 
             if (NFT_CONTRACT.typeIndexOf(redeemedId) == typeId) {

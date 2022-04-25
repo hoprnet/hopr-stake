@@ -84,10 +84,10 @@ const whitehatTestOnly = !TEST_WHITEHAT_ONLY || TEST_WHITEHAT_ONLY.toLowerCase()
         stakeContract = await deployContract4(deployer, "HoprStakeSeason4", nftContract.address, adminAddress, erc677.address, erc777.address);
 
         // airdrop some NFTs (0,1,2,3,4) to participants
-        await nftContract.connect(admin).batchMint(participantAddresses.slice(0, 2), BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
-        await nftContract.connect(admin).mint(participantAddresses[0], BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline);
-        await nftContract.connect(admin).mint(participantAddresses[0], BADGES[4].type, BADGES[4].rank, BADGES[4].nominator, BADGES[4].deadline);
-        await nftContract.connect(admin).mint(participantAddresses[2], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline);
+        await nftContract.connect(admin).batchMint(participantAddresses.slice(0, 2), BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline); // nft nr 0,1: demo (typeIndex 1)
+        await nftContract.connect(admin).mint(participantAddresses[0], BADGES[1].type, BADGES[1].rank, BADGES[1].nominator, BADGES[1].deadline); // nft nr 2: HODLr (typeIndex 2)
+        await nftContract.connect(admin).mint(participantAddresses[0], BADGES[4].type, BADGES[4].rank, BADGES[4].nominator, BADGES[4].deadline); // nft nr 3: HODLr (typeIndex 2)
+        await nftContract.connect(admin).mint(participantAddresses[2], BADGES[0].type, BADGES[0].rank, BADGES[0].nominator, BADGES[0].deadline); // nft nr 4: demo (typeIndex 1)
         // airdrop some ERC677 to participants
         await erc677.batchMintInternal(participantAddresses, utils.parseUnits('10000', 'ether')); // each participant holds 10k xHOPR
         await erc777.mintInternal(adminAddress, utils.parseUnits('5000000', 'ether'), '0x', '0x'); // admin account holds 5 million wxHOPR
@@ -98,8 +98,6 @@ const whitehatTestOnly = !TEST_WHITEHAT_ONLY || TEST_WHITEHAT_ONLY.toLowerCase()
         await nftContract.connect(participants[0]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[0], stakeContract.address, 0);
         // redeem a demo token - platinum
         await nftContract.connect(participants[2]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[2], stakeContract.address, 4);
-        // redeem a Testnet participant token - gold
-        await nftContract.connect(participants[0]).functions["safeTransferFrom(address,address,uint256)"](participantAddresses[0], stakeContract.address, 3);
         // provide 5 million REWARD_TOKEN
         await erc777.connect(admin).send(stakeContract.address, utils.parseUnits('5000000', 'ether'), '0x'); 
     }
