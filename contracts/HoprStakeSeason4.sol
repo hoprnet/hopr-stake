@@ -459,12 +459,14 @@ contract HoprStakeSeason4 is Ownable, IERC777Recipient, IERC721Receiver, Reentra
         Account memory account = accounts[_account];
         // update states
         uint256 amount = account.cumulatedRewards - account.claimedRewards;
-        accounts[_account].claimedRewards = accounts[_account].cumulatedRewards;
-        require(availableReward >= amount, "HoprStake: Insufficient reward pool.");
-        availableReward -= amount;
-        // send rewards to the account.
-        IERC20(REWARD_TOKEN).safeTransfer(_account, amount);
-        emit Claimed(_account, amount);
+        if (amount > 0) {
+            accounts[_account].claimedRewards = accounts[_account].cumulatedRewards;
+            require(availableReward >= amount, "HoprStake: Insufficient reward pool.");
+            availableReward -= amount;
+            // send rewards to the account.
+            IERC20(REWARD_TOKEN).safeTransfer(_account, amount);
+            emit Claimed(_account, amount);
+        }
     }
 
     /**
