@@ -10,6 +10,8 @@ import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-solhint";
 import "solidity-coverage";
 
+import { PRIVATE_KEY_ALICE } from "./utils/constants";
+
 const { ETHERSCAN , MINTER_KEY, DEPLOYER_PRIVATE_KEY } = process.env;
 
 const hardhatConfig: HardhatUserConfig = {
@@ -47,7 +49,7 @@ const hardhatConfig: HardhatUserConfig = {
       "xdai": '0xE9131488563776DE7FEa238d6112c5dA46be9a9F'
     },
     alice: {
-      default: 2,
+      default: `privateKey://${PRIVATE_KEY_ALICE}`,
       "goerli": '0x3dA21EB3D7d40fEA6bd78c627Cc9B1F59E7481E1',
       "xdai": '0x3dA21EB3D7d40fEA6bd78c627Cc9B1F59E7481E1'
     }

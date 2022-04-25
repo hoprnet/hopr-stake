@@ -2,6 +2,8 @@ import { utils } from "ethers";
 
 export const MINTER_ROLE = utils.keccak256(utils.toUtf8Bytes("MINTER_ROLE"));
 
+export const PRIVATE_KEY_ALICE = "a0a850122d32bb667999d3cf63a0bddc208cee19e2fefa3d0bd495f5fac51ec6";
+
 export const NAME = "HOPR Boost NFT";
 export const SYMBOL = "HOPR Boost";
 export const BASIC_START = 1627387200; // July 27 2021 14:00 CET.
