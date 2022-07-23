@@ -4,7 +4,7 @@ import { assert } from 'console';
 import type { HardhatRuntimeEnvironment, RunSuperFunction } from 'hardhat/types'
 import { BOOST_CONTRACT_XDAI_PROD } from '../utils/constants';
 import { apy, GAS_ESTIMATION_PER_BATCH, getGasPrice, MAX_BATCH_MINT_FOR, parseCsv, rate, splitArray } from '../utils/mint';
-import { ContractTransaction, utils } from 'ethers';
+import { utils } from 'ethers';
 
 const INPUT_PATH = `${process.cwd()}/inputs/`;    // location where rawdata gets stored
 
