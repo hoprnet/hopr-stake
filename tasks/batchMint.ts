@@ -4,7 +4,7 @@ import { assert } from 'console';
 import type { HardhatRuntimeEnvironment, RunSuperFunction } from 'hardhat/types'
 import { BOOST_CONTRACT_XDAI_PROD } from '../utils/constants';
 import { apy, GAS_ESTIMATION_PER_BATCH, getGasPrice, MAX_BATCH_MINT_FOR, parseCsv, rate, splitArray } from '../utils/mint';
-import { ContractTransaction, utils } from 'ethers';
+import { utils } from 'ethers';
 
 const INPUT_PATH = `${process.cwd()}/inputs/`;    // location where rawdata gets stored
 
@@ -68,13 +68,14 @@ async function main(
     assert(minterBalance.gte(estimatedGas), `Not enough balance for gas. Please get at least ${utils.formatEther(estimatedGas)}`)
     console.log(`\nThere will be ${numTx} transactions.`);
 
+    let txHashes: string[] = [];
     try {
-        // build batch functions
-        const mintTxs = Object.keys(results).map((boostRank: string, rankIndex: number) => {
+        Object.keys(results).forEach(async(boostRank: string, rankIndex: number) => {
+            // group transactions by its rank and MAX_BATCH_MINT_FOR
             const startNonce = currentNonce + rankStartNonce[rankIndex];
             const recipients = results[boostRank];
             const groupedRecipients = splitArray(recipients, MAX_BATCH_MINT_FOR);
-            return groupedRecipients.map((batch: string[], batchIndex: number) => {
+            await groupedRecipients.forEach(async(batch: string[], batchIndex: number) => {
                 if (log) {
                     // encode function data
                     console.log('\n   >> Transaction Nr.%d, data payload:', startNonce + batchIndex)
@@ -86,7 +87,7 @@ async function main(
                         deadline
                     ]))
                 }
-                return hoprBoost.connect(minter).batchMint(
+                const tx = await hoprBoost.connect(minter).batchMint(
                     batch,
                     type,
                     boostRank,
@@ -97,16 +98,18 @@ async function main(
                         gasPrice
                     }
                 )
+                // save transaction hash
+                txHashes.push(tx.hash)
+                // wait until tx confirmed before starting a new one
+                await tx.wait()
             })
-        });
+        })
 
-        const flatMintTxs = await Promise.all(mintTxs.flat()) as ContractTransaction[];
         console.log('\nContract tx hashs')
-        console.table(flatMintTxs.map(tx => {return {url: `https://blockscout.com/xdai/mainnet/tx/${tx.hash}`}}))
-        await Promise.all(flatMintTxs.map(mintTx => mintTx.wait()));
+        console.table(txHashes.map(txHash => {return {url: `https://blockscout.com/xdai/mainnet/tx/${txHash}`}}))
 
         // We log the transaction hash and verify the NFTs from the contract
-        console.log(`\nNFTs minted NFT in the ${JSON.stringify(flatMintTxs.map(mintTx => mintTx.hash), null, 2)} transaction`);
+        console.log(`\nNFTs minted NFT in the ${JSON.stringify(txHashes, null, 2)} transaction`);
     } catch (error) {
         console.error(error)
     }
