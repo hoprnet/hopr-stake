@@ -70,12 +70,14 @@ async function main(
 
     let txHashes: string[] = [];
     try {
-        Object.keys(results).forEach(async(boostRank: string, rankIndex: number) => {
+        let rankIndex = 0;
+        for await (const boostRank of Object.keys(results)) {
             // group transactions by its rank and MAX_BATCH_MINT_FOR
             const startNonce = currentNonce + rankStartNonce[rankIndex];
             const recipients = results[boostRank];
             const groupedRecipients = splitArray(recipients, MAX_BATCH_MINT_FOR);
-            await groupedRecipients.forEach(async(batch: string[], batchIndex: number) => {
+            let batchIndex = 0;
+            for await (const batch of groupedRecipients) {
                 if (log) {
                     // encode function data
                     console.log('\n   >> Transaction Nr.%d, data payload:', startNonce + batchIndex)
@@ -87,23 +89,31 @@ async function main(
                         deadline
                     ]))
                 }
-                const tx = await hoprBoost.connect(minter).batchMint(
-                    batch,
-                    type,
-                    boostRank,
-                    boost[boostRank],
-                    deadline,
-                    {
-                        nonce: startNonce + batchIndex,
-                        gasPrice
-                    }
-                )
-                // save transaction hash
-                txHashes.push(tx.hash)
-                // wait until tx confirmed before starting a new one
-                await tx.wait()
-            })
-        })
+                try {
+                    const tx = await hoprBoost.connect(minter).batchMint(
+                        batch,
+                        type,
+                        boostRank,
+                        boost[boostRank],
+                        deadline,
+                        {
+                            nonce: startNonce + batchIndex,
+                            gasPrice
+                        }
+                    )
+                    console.log('\n   >> Transaction Nr.%d, sent', startNonce + batchIndex)
+                    // save transaction hash
+                    txHashes.push(tx.hash)
+                    // wait until tx confirmed before starting a new one
+                    await tx.wait()
+                    console.log('\n   >> Transaction Nr.%d, confirmed', startNonce + batchIndex)
+                } catch (error) {
+                    console.error(error)
+                }
+                batchIndex ++;
+            }
+            rankIndex ++;
+        }
 
         console.log('\nContract tx hashs')
         console.table(txHashes.map(txHash => {return {url: `https://blockscout.com/xdai/mainnet/tx/${txHash}`}}))
