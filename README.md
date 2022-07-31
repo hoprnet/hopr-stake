@@ -1,4 +1,281 @@
-# hopr-stake
+# NFT Minting process
+
+First of all, create a non-custodial wallet address (Metamask wallet) specifically for the minting process (one time setup). And make sure to top up with some xDai tokens, because you will be paying the gas fees during the minting process.
+
+Ask Sebastian or Rik, or Q to give you a minter role for a recently created wallet address.
+
+## Add new NFTs to the staking UI
+
+### 1. Make sure that images meet the standards.
+
+- Image resolution is **1600 x 2263**
+- Image type is **.jpg**
+
+I recommend using a tool called ImageOptim which optimizes your image size, because at the beginning it will have 400 - 500 kb / image, which is a pretty big size for the web. The main setting I am using is to make sure that JPEG quality would be at least 85%. Which will make your image size at around about 200 - 300 kb.
+
+### 2. Use IPFS services to upload the images.
+
+- Make sure that your images are under the folder which has the NFT type name. This is for comfortable management purposes.
+- Make sure that images names are lowercase and file names meet the rank. For example: `bronze.jpg`
+
+Visit https://app.pinata.cloud/pinmanager (you will need to create the account), click on the button `+ Upload` and upload images as a folder.
+
+After the upload, you will see the CID hash next to your recently uploaded folder. For example:
+```QmXUhs8vi7NpRa5ZJb4mEoVRUBLT6vc7L1AjaEgJ41ikUC```
+
+CID hash will be your uploaded folder address. Hyperlink to the images will look similar to this: ```ipfs://QmdtpZKNAjJEDZc5j7pdj8uunqaQTaSx5fjEPCWMf5nBWH/bronze.jpg```
+
+If you want to check if you did everything correctly, you can click on the recently uploaded folder and check a list of uploaded images.
+
+![y5LiJSA3cOKc5FvjGmXYaU3wO-BzkLqqpwGeL9oY_02UCZhl7A07ZvW8lVOpgs5ON4pTs8MM-AJHtLZ_FMwOjwXxtmrW-sE9dgIb-bV5x6r34ZTtTnth55-fgoZ9NOxT6Thrg-fEcnGuZEIA6Sv7TvQ](https://user-images.githubusercontent.com/73285987/179196916-d3c3bc18-3d17-424b-aed4-bc87f6a4cce6.png)
+
+### 3. Using Github we will need to add NFT’s metadata, which needs for:
+
+- During the minting process it will include this metadata info directly into NFT, so everyone could check the details about this nft on blockscout (GC explorer).
+- Staking UI, will recognise the NFT and will render all the details about this specific NFT.
+
+This url will be a location of all NFTs metadata: https://github.com/hoprnet/hopr-devrel/tree/main/stake/packages/frontend/public
+
+By clicking on this url, you will be on a main branch. You will need to change branch based on the staking season, at the moment the tutorial was created we have staking season 3, this means the branch will be: `release/stake-v3`
+
+![m7yXWDgES4FeS8ANdMrn7zaHWAHJZbY0wrCFJzgDaaVdmni4GVZf28pJKToZ11gtt6WoA-NYxiyqbJ-mo_4Tc95kKgMk7q4KqJ9zkz34iCd7irVeU4woG8SOOt62Yyg6i5Cwn0r1c-aKpY524ZR71-0](https://user-images.githubusercontent.com/73285987/179207839-c5a7d573-ee75-45ea-a61e-87c44282e992.png)
+
+Create a folder which has the exact name as the NFT type (On a minting process you will need to use the same name for a match) for example: `Wildhorn_v2`
+
+On the top left corner click on `Add file` and click on `Create new file`:
+
+![xguT9FYxQQx2o-Zxzvucp8y7eeotcw-nl-mgWBNor6pjPzowGoVlYH81Ysr_ophy8obVQX4pHZqoON9TTYdzswVNLHwNh8kk_VSSiJ0Hx7VdEGI7avmk3Y4yrSJKapuLUAILg3XMKmMk4RR__FxyRVM](https://user-images.githubusercontent.com/73285987/179208871-a5353821-7fc6-4fb9-b155-d1bc1f637bcf.png)
+
+Enter the name of a folder and add a slash symbol `/` at the end, this will create a folder. This needs only once, later you will be creating only files inside the folder.
+
+![vY1Zvv5Fooi4a9tLPOd6MeVfa9ejzdVmunQKxArVCfHmIFmxN5OKK3_C0q96XAoru9ukHXA5p_-SuczEp0dGMuw0K8aPeDxy-GFVty0EzTpQPZgKQl4TBbXILUaPDFrg7Ul6Rsu_BDi9wEIuK2y1J0c](https://user-images.githubusercontent.com/73285987/179210693-cedfdb90-ad88-41f2-9eea-2268540d07ea.png)
+
+Now you can enter the name of a specific NFT rank, for example: `bronze`
+
+![-8_Muz-FV0TLCxHJTcqkU5WndJgQk0UQNSDpA4r5pWpaF3DjRnER6QQAatRxFeURQlqEGhHF8s8r7w17UE-QU4-1mKTLfhw-FUDQky261kXs5DL6cvBjqwoJBNyixSV6f8AGLKMs3rVnaPT8FjnKlJo](https://user-images.githubusercontent.com/73285987/179210850-a457b898-c920-4192-a057-903e23a657d6.png)
+
+In the text field you will to enter the metadata details for this specific rank. For example:
+```
+{
+    "type": "Wildhorn_v2",
+    "rank": "bronze",
+    "image": "ipfs://QmXUhs8vi7NpRa5ZJb4mEoVRUBLT6vc7L1AjaEgJ41ikUC/bronze.jpg",
+    "deadline": 1642424400,
+    "boost": 0.03
+}
+```
+![COy8mBr8vnlMBQ53DJW3MTkGGCO8kkUvoKVu6XSIbUZBNU-QAdvGF1xTcQZ0pLbhEmaqiESpEugTRx9ehrzWtGAnovpTnR2xOfcxIvdlPJr82JE9xlo5lNoxbfOAKaG5ptRF-TG-ty749miVVaKZ7vk](https://user-images.githubusercontent.com/73285987/179211053-526f02a1-d0dd-4f85-8071-48b029d342e3.png)
+
+- **type** - Name of NFT type.
+- **rank** - NFT rank, can be only: bronze, silver, gold, diamond
+- **image** - IPFS link to the specific NFT rank
+- **deadline** - is the timestamp, when the staking season ends.
+- **boost** - boost value, in this case 0.03 means 3%
+
+After you added the metadata info for the bronze rank, scroll to the bottom, make sure to select: Create a new branch for this commit and start a pull request and name your branch. For example: Adding-Wildhorn_v2-NFT, make sure to fill the spaces between words with dashes.
+
+*By creating a new branch it will have a copy of this repository with your modified files.*
+
+Now click the button `Propose new file`
+
+![FFgKRNI1Uzvt63fRX0p0seD44BDnKmY-hws0NYoFbfLVhACPzn8pifiTxOqbu75YW5aljHIgujh0gGn_B50tXWEQrJxLrWeez281n2OcrJPmkKeUBDUf4yi_JKS3apeed5pi5xx6M7LkIyZx1oDv2nc](https://user-images.githubusercontent.com/73285987/179218407-29ee3bf0-3569-44db-9403-7c7c08678dcb.png)
+
+It will ask you to open a pull request, but we will skip this step, because we only added metadata info with only a bronze rank. Now click on `hopr-devrel`, to get back to the main category of this repository.
+
+![nFgsWER2dqcSph-XzCu2qFtTByXbHQnOeg1UGmsFnY2WycjLlXSq9AmGckI6bn0n6G1sK9eDuAihCgcUb_aWakmsDd1z8Ul3sFnPIHzcbuCQysXELEv9Syz16fN2dkUh2MFU-UJKhd9t0DDHciqi5s0](https://user-images.githubusercontent.com/73285987/179218529-6d1db99b-2b98-4581-9b24-27719024e0ab.png)
+
+You will see a notification box about your recently created branch, click on the name of your new branch. In this example this will be `Adding-Wildhorn_v2-NFT`
+
+![r1r2Tv7K7JW4RgL_Cps346rd7IE-OwbXWVpI4G-0v5rKbcsA1x26Un7bE30g7Z3WnYBO6hnkwfJvgBNEUEW4u2sipEDjzdPinMEgVlXrqwU48tqftt3lByOqjMz0buoLgHsTe9lOc00Syy-dAQ-Nr6s](https://user-images.githubusercontent.com/73285987/179218729-1f204b3f-ffac-4bc3-920a-87d9b2152f32.png)
+
+Now you are on the branch where you have your modified files. Go to folders: 
+
+`stake -> packages -> frontend -> public`
+
+Now you will see your recently created folder with a name of NFT type. In this tutorial we are using: `Wildhorn_v2`, click on your recently created folder and you will see a bronze rank file.
+
+![54V68REogJkJbNhkbS6YjvNyeITnscCC9XrXRXr4ibrFCgXkax1iIsgM_DfRN8kCFYwwcobSdO6BhlQBJKNkbvReGdGssiKN_Ea-Re2yUSYY5GCaF7a-iUQBbd-GkyWd4XjbHTEc4D5jimYQxcjQrI4](https://user-images.githubusercontent.com/73285987/179227274-e4ef7f2f-88b1-4234-b3f4-e0c73c841eb6.png)
+
+Now you need to add a metadata file with the other rank. Click on the top right corner `Add file` enter the file name: `silver` and fill with the metadata info.
+
+![uk2DkvOiWjZoxDQPRsir3ZLQwDGzlXjb2SXBqGv3K1tHnCNVNwqa2DR2pUP09abwhawqq4K5h0c0qPU0XYQwJ2B-UcffcT_5_I1zt2tiOVwWDmEBfXAj-PkykpJu_mf_Xw7RdnUxHg6VGUkFFv2kaGg](https://user-images.githubusercontent.com/73285987/179227433-2fb78537-dfee-4690-a127-9fa9688835a3.png)
+
+Scroll to the bottom and now instead of creating a new branch, you will make the edits on your recently created branch. Make sure it has been selected: Commit directly to the `<Your branch name>` branch. In this tutorial it will be: Commit directly to the `Adding-Wildhorn_v2-NFT` branch.
+
+![xZA99LGkZoUoX_o6JASkWSI7NnzL7gRHNthtKbmEtdCXMbWQsm8a3f8rNsl3dZGScNAKjBP7sCflmES_5bS5URqWU83PYwJGOzbi4YypVgs893uuY0Ora0lSt0pSg1B96gaXjpSqX-osfzYUFPJdQ68](https://user-images.githubusercontent.com/73285987/179227742-67864cf4-edd5-4a30-8ec0-0714571ce79d.png)
+
+Now click the button `Commit changes`, after you commit changes it will get back to your folder, so you don’t need to go to the beginning of the `hopr-devrel` repository. 
+
+Now click on the top right corner `Add file` and repeat the same process with the rest rank files the way you did with a `silver` rank.
+
+After you added all metadata files with all ranks, now you need to pull request your changes, so it could be approved and merged into deployment (production). Now go back to the main hopr-devrel repository by clicking on the top left corner “hopr-devrel”.
+
+You will see the same notification box, in this time click on the “Compare & pull request” button.
+
+![YWUJIkftiF-xtnzUpkeX3_a5ORQhrQSCPX0EfoIYPhGRQ1hO854LYRiJpRhx9BfedpJ8xL0YYNEqxKvAUUZqLNl_6cj9FEpDBVv0EVmCw3TIlwgfeMiLOhiMCqbVB5rNChsRv8frCMOArCfOkju1DJg](https://user-images.githubusercontent.com/73285987/179227915-55e60591-69b8-4fab-8600-0541bab5219d.png)
+
+#### Now make sure to do these steps: 
+
+- Change a branch base from `main` to `release/stake-v3` (branch depends on the current staking season). Because every staking UI is deployed on the different branches, depending on the staking season.
+- Add a meaningful title, so it will be clear for the others on what you have been working on.
+- Add reviewer, usually Andrius or Rich. On the picture below, on the right side you will see reviewers section, click on a gear icon and enter the name of a reviewer.
+
+![oDhVHJmWXM6HihBUxjKoNQxW3jWJIV7UPDTjQKqXT_Hz2i4Ve_x2PH7n_FurZ2budYibC8kP1pVqyE_vk9ff_wBHJw3VUS2yhQ4koFqRsHlNKkDicjXTCWKPfl6JKZQOMGpghlIv_7jRSJeu9LFmow8](https://user-images.githubusercontent.com/73285987/179236011-47b18ca2-17a7-459d-b16b-e557b5078d2b.png)
+
+Click on the button `Create pull request` and voila! After someone will review and approve your changes, you will be able to merge your PR. After your PR will be merged you can move to the next step, the minting process!
+
+
+## Minting NFTs
+
+*This tutorial section is based on the Mac OS.*
+
+### Setup and prepare nvm on your mac (one time setup).
+
+Visit: https://github.com/nvm-sh/nvm#installing-and-updating
+
+Open terminal app on your mac and execute the command:
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+```
+
+After it will finish nvm installation, execute this command:
+
+```
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")" [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+```
+
+Make sure it was installed correctly and the node default version is at least `16`. To check this, execute the command: 
+```
+nvm ls
+```
+If it will not recognise nvm, please troubleshoot the issue with Andrius.
+
+### Setup and prepare hopr-stake repository on your mac (one time setup).
+
+On your terminal window, clone `hopr-stake` repository from github to your mac by executing this command: 
+```
+git clone https://github.com/hoprnet/hopr-stake.git
+```
+FYI after the cloning process will be finished, it will create a folder with all required files on the default location: `Users/<username>/hopr-stake`
+
+Now go to the hopr-stake folder by executing this command: 
+```
+cd hopr-stake
+```
+Now we need to install and build the `hopr-stake` repository. Execute commands one by one.
+
+Execute the first command:
+```
+yarn install
+```
+After yarn install will finish it’s job, execute this command:
+```
+yarn build
+```
+If you didn’t receive any errors, this means you made it! And hopr-stake script is ready to go!
+
+### Minting process and what needs to be done
+
+Before editing the files, my recommendation is to install a code editor tool called [Visual Studio Code](https://code.visualstudio.com/Download), which is lightweight and will not auto correct the text.
+
+For managing files I would recommend using a finder app or any other file manager. Now lets find our folder `hopr-stake`. Launch Finder app and from the top menu locate `Go` and then select `Go to Folder…` enter the location: `/Users/<username>/hopr-stake/` where `<username>` is your username on your mac. For example: `/Users/Andrius/hopr-stake/`
+
+1. Lets prepare a CSV file, the structure of a file you will find inside the hopr-stake folder on a sub-folder called `inputs`, have a look at file: `Wildhorn_v2.csv`
+    
+    CSV file structure will consist of 2 header terms `eoa` and `grade` which are separated with comma:
+
+    - **eoa** - stands for the recipient eth address
+    - **grade** - stands for the rank the recipient should receive
+
+    Always make sure that eth address should be included between: `><`, for example row will look like: `>0x00000000000000000000000<,diamond`
+
+    After the CSV file will be ready, make sure the CSV file name is the same as the NFT type name. Now you will need to upload a CSV file to the `inputs` folder, which is a subfolder of a `hopr-stake`. The location is: `Users/<username>/hopr-stake/inputs`
+    
+2. Find batchmint.ts file to modify boost rank percentages.
+
+   batchMint.ts location is - `/Users/<username>/hopr-stake/tasks/batchMint.ts`
+   
+   Open batchMint.ts file with `VSC (Visual Studio Code)` app and make some edits.
+   
+   Find a 12th row and you will see a list of ranks and it’s values:
+   
+   ![IU5jmqJhfFmp7JqLgi02C99szAdHCt48OSb5NgvA0M33CBVe8-_pwroy9463rFkV4pg7Y98SNwUwGqyqfNuUiMtWBKo2H10ewNOv8gc-skRS-tPW9zkHWXUrruAzXyyYI1EK9XXiKFAD9A3Mv6dqF9o](https://user-images.githubusercontent.com/73285987/179239104-b5c53f53-b779-4268-b0d8-6f967c44278e.png)
+   
+   You will need to change rate numbers depending on NFT boost percentages. For example 7.5 stands for 7.5% boost.
+
+   Keep in mind sometimes you will need to mint less than 4 ranks, this means you will need to leave only the ranks you will be minting, otherwise it could show you the errors during the minting process.
+
+   After you finish editing the ranks and boost percentages, save and quit from a file.
+  
+3. Now the important part, you will need to enter the secret key of your recently created wallet address inside a file called: `.env`
+
+    Let's find your wallet's secret key. Go to metamask, make sure you have selected the right address and click on the 3 dots which are on the top right corner, and select `Account details`. Click on a button `Export Private Key`, enter your metamask password and it will show you a private key.
+
+    Now to find file `.env`, use the finder app and make sure you are in the `hopr-stake` folder.
+
+    *Files which don't have names and only have file extensions like .env are by default hidden for security reasons.*
+    
+    To be able to see hidden files, use your keyboard combination: `Command + Shift + .`
+
+    You will notice file called `.env.example`, please remove the `.example` part, so file should look like this: `.env`
+
+    Edit `.env` file with `VSC`. This file should contain with these lines:
+    ```
+    ETHERSCAN=
+    DEPLOYER_PRIVATE_KEY=
+    ADMIN_ACCOUNT=
+    ALICE=
+    MINTER_KEY=
+    TEST_WHITEHAT_ONLY=false
+    ```
+    What you will need to do is to enter your wallet secret key next to `MINTER_KEY=`, in the end file should look similar to this:
+    ```
+    ETHERSCAN=
+    DEPLOYER_PRIVATE_KEY=
+    ADMIN_ACCOUNT=
+    ALICE=
+    MINTER_KEY=<Your wallet secret key>
+    TEST_WHITEHAT_ONLY=false
+    ```
+    `<Your wallet secret key>` - replace with your wallet secret key and fill without <>.
+
+    **IMPORTANT** after you finish the minting process, ***delete your wallet secret key*** from the file .env and save.
+
+    Great, now you updated the .env file with your secret key and you are ready for the last step!
+
+4. Last step, minting!
+
+   Lets double check:
+
+   - You have prepared a CSV file which name is exactly like an NFT type name and it is uploaded to a subfolder called `inputs`.
+   - `batchMint.ts` file is updated with corresponding ranks and percentages.
+   - You have temporary entered your wallet secret key on the file `.env`
+
+   Now before actual minting, execute the command locally. Open terminal app and execute command: 
+   ```
+   NAME="<NFT type name>" yarn batchmint:local:save-log
+   ```
+   `<NFT type name>` - NFT type name, which should match with CSV file name, Metadata folder which was added previously. For example:
+   ```
+   NAME="Wildhorn_v2" yarn batchmint:local:save-log
+   ```
+   After executing the command above will not give any major errors, except gas fees error, this means it should be good to go for an actual minting process.
+
+   For the actual minting process execute command:
+   ```
+   NAME="<NFT type name>" yarn batchmint:xdai:save-log
+   ```
+   Don’t forget to replace `<NFT type name>` with corresponding NFT type name.
+
+   Now let's wait and let it do all the magic, if you will see the list of transactions, this means you have successfully minted the NFTs!
+   
+## Troubleshooting
+
+   Check the original source at [hopr-stake technical part](https://github.com/hoprnet/hopr-stake/edit/main/README.md#hopr-stake-technical-part) section, please follow the instructions up to 6th step including.
+   
+<hr>
+
+## hopr-stake technical part
 Smart contract for staking incentives with NFTs
 
 ## Installation
