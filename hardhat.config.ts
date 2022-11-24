@@ -26,7 +26,7 @@ const hardhatConfig: HardhatUserConfig = {
     },
     xdai: {
       chainId: 100,
-      url: `https://provider-proxy.hoprnet.workers.dev/xdai_mainnet`,
+      url: `https://rpc.gnosischain.com`,
       accounts: [MINTER_KEY || [], DEPLOYER_PRIVATE_KEY || []].flat(),
       tags: ["production"]
     },
