@@ -116,7 +116,7 @@ async function main(
         }
 
         console.log('\nContract tx hashs')
-        console.table(txHashes.map(txHash => {return {url: `https://blockscout.com/xdai/mainnet/tx/${txHash}`}}))
+        console.table(txHashes.map(txHash => {return {url: `https://gnosisscan.io/tx/${txHash}`}}))
 
         // We log the transaction hash and verify the NFTs from the contract
         console.log(`\nNFTs minted NFT in the ${JSON.stringify(txHashes, null, 2)} transaction`);
